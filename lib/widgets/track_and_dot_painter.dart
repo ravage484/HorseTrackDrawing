@@ -22,11 +22,13 @@ class TrackAndDotPainter extends BaseCustomPainter {
       ..color = Colors.green[800]!
       ..style = PaintingStyle.fill;
 
-    // Define the track path
+    // Define the track path (from center)
+    // Center of the canvas
+    final centerOffset = Offset(size.width / 2, size.height / 2);
     final trackPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(size.height / 2),
+    ..addRRect(RRect.fromRectAndRadius(
+      Rect.fromCenter(center: centerOffset, width: size.width, height: size.height),
+      Radius.circular(size.height / 2),
       ));
 
     // Draw the filled track
@@ -35,6 +37,38 @@ class TrackAndDotPainter extends BaseCustomPainter {
     // Draw the track outline
     canvas.drawPath(trackPath, trackOutlinePaint);
 
+    // // Draw the lines to represent lanes in the track and the finish line
+    // final lanePaint = Paint()
+    //   ..color = Colors.white
+    //   ..style = PaintingStyle.stroke
+    //   ..strokeWidth = 1.0;
+
+    // // Also define the offset for each lane by roughly dividing the width of the track
+    // final laneWidthOffset = size.width * 0.025;
+    // final laneHeightOffset = size.height * 0.07;
+
+    // // Define the track path (several lanes as rounded rectangles)
+    // final outerLanePath = Path()
+    //   ..addRRect(RRect.fromRectAndRadius(
+    //   Rect.fromCenter(center: centerOffset, width: size.width + laneWidthOffset, height: size.height + laneHeightOffset),
+    //     Radius.circular(size.height / 2),
+    //   ));
+    // final lanePath = Path()
+    //   ..addRRect(RRect.fromRectAndRadius(
+    //     Rect.fromLTWH(0, 0, size.width, size.height),
+    //     Radius.circular(size.height / 2),
+    //   ));
+    // final innerLanePath = Path()
+    //   ..addRRect(RRect.fromRectAndRadius(
+    //   Rect.fromCenter(center: centerOffset, width: size.width - laneWidthOffset, height: size.height - laneHeightOffset),
+    //     Radius.circular(size.height / 2),
+    //   ));
+
+    // // Draw the lanes
+    // canvas.drawPath(lanePath, lanePaint);
+    // canvas.drawPath(outerLanePath, lanePaint);
+    // canvas.drawPath(innerLanePath, lanePaint);
+    
     // Draw the animated dot with a white outline
     final dotPaint = Paint()..color = dot.color;
     final outlinePaint = Paint()..color = Colors.white;
@@ -52,6 +86,7 @@ class TrackAndDotPainter extends BaseCustomPainter {
     
     // Draw the outline
     canvas.drawCircle(dotPosition, dotRadius + outlineWidth, outlinePaint);
+
     // Draw the dot
     canvas.drawCircle(dotPosition, dotRadius, dotPaint);
   }
