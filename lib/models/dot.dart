@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 class Dot {
-  final int id; // Unique identifier
   final Color color;
   final Duration loopDuration;
+  late AnimationController controller;
 
-  Dot({required this.id, required this.color, required this.loopDuration});
+  Dot({required this.color, required this.loopDuration});
+
+  void initializeController(TickerProvider vsync) {
+    controller = AnimationController(vsync: vsync, duration: loopDuration)..forward();
+  }
 }

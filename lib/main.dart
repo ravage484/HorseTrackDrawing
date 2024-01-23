@@ -12,28 +12,30 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Dot dot;
+class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
+  List<Dot> dots = [];
+  int numberOfDots = 20; // Replace 10 with the desired number of dots
 
   @override
   void initState() {
     super.initState();
-    dot = Dot(
-      id: 1,
-      color: getRandomColor(),
-      loopDuration: const Duration(seconds: 30),
-    );
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: dot.loopDuration,
-    )..repeat();
+    // Initialize multiple dots here
+    for (int i = 0; i < numberOfDots; i++) {
+      var duration = Duration(seconds: 60 + i); // Example duration
+      var dot = Dot(
+        color: getRandomColor(),
+        loopDuration: duration,
+      );
+      dot.initializeController(this);
+      dots.add(dot);
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    for (var dot in dots) {
+      dot.controller.dispose();
+    }
     super.dispose();
   }
 
@@ -54,17 +56,18 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           title: const Text('Animating Dot on Track'),
         ),
         body: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (_, child) {
-              return CustomPaint(
-                size: trackSize,
-                painter: TrackAndDotPainter(
-                  progress: _controller.value,
-                  dot: dot,
-                ),
+          child: Stack(
+            children: dots.map((dot) {
+              return AnimatedBuilder(
+                animation: dot.controller,
+                builder: (context, child) {
+                  return CustomPaint(
+                    size: trackSize,
+                    painter: TrackAndDotPainter(dots: dots),
+                  );
+                },
               );
-            },
+            }).toList(),
           ),
         ),
       ),
