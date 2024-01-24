@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For RawKeyboardListener
+import 'dart:math';
 import 'models/dot.dart'; // Adjust the import path based on your project structure
 import 'widgets/track_and_dot_painter.dart'; // Adjust the import path
 import 'utils/utils_colors.dart'; // Adjust the import path
-import 'package:flutter/services.dart'; // For RawKeyboardListener
+import 'package:horse_track_drawing/resources/kentucky_derby_winners.dart'; // Adjust the import path
 
 void main() => runApp(const MyApp());
 
@@ -10,10 +12,10 @@ class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState();
+  MyAppState createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
+class MyAppState extends State<MyApp> with TickerProviderStateMixin {
   List<Dot> dots = [];
   int numberOfDots = 20; // Replace 10 with the desired number of dots
   final FocusNode _focusNode = FocusNode();
@@ -26,21 +28,37 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
       _focusNode.requestFocus();
     });
 
+    // Copy the list of names
+    var names = List<String>.from(KENTUCKY_DERBY_WINNERS); 
+    
     // Initialize multiple dots here
     for (int i = 0; i < numberOfDots; i++) {
       var duration = Duration(seconds: 10 + i); // Example duration
+      int randomIndex = Random().nextInt(names.length);
+      String randomName = names.removeAt(randomIndex);
+
+      // Initialize a dot
       var dot = Dot(
+        name: randomName,
         color: getRandomColor(),
         loopDuration: duration,
       );
-      dot.initializeController(this);
-      dots.add(dot);
-    }// Start an animation status listener to update the UI
 
+      // Initialize the controller
+      dot.initializeController(this);
+
+      // Add the dot to the list
+      dots.add(dot);
+    }
+
+    // Add a listener to each controller
     for (var dot in dots) {
       dot.controller.addListener(() {
         setState(() {
+          // Update the progress of each dot
           dot.updateProgress();
+
+          // Sort the dots based on progress
           dots.sort((a, b) => b.progress.compareTo(a.progress)); // Sort based on progress
         });
       });
@@ -90,7 +108,7 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
                   itemBuilder: (context, index) {
                     return ListTile(
                       leading: Icon(Icons.circle, color: dots[index].color),
-                      title: Text("Dot ${index + 1}"),
+                      title: Text(dots[index].name),
                       trailing: Text("${(dots[index].progress * 100).toStringAsFixed(0)}%"),
                     );
                   },
