@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:horse_track_drawing/models/dot.dart';
-import 'package:horse_track_drawing/widgets/custom_painter.dart';
 
 // Custom painter class for drawing the track and animated dot
 class TrackAndDotPainter extends CustomPainter {
@@ -26,7 +25,7 @@ class TrackAndDotPainter extends CustomPainter {
     final centerOffset = Offset(size.width / 2, size.height / 2);
     final trackPath = Path()
     ..addRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: centerOffset, width: size.width, height: size.height),
+      Rect.fromCenter(center: centerOffset, width: size.width - trackOutlinePaint.strokeWidth, height: size.height),
       Radius.circular(size.height / 2),
       ));
 
