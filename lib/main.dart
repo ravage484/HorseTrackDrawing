@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'models/dot.dart'; // Adjust the import path based on your project structure
 import 'widgets/track_and_dot_painter.dart'; // Adjust the import path
@@ -18,28 +16,15 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
   List<Dot> dots = [];
   int numberOfDots = 20; // Replace 10 with the desired number of dots
 
-  Curve getRandomCurve() {
-    Random random = Random();
-    return Cubic(
-      random.nextDouble(),
-      random.nextDouble(),
-      random.nextDouble(),
-      random.nextDouble(),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
     // Initialize multiple dots here
     for (int i = 0; i < numberOfDots; i++) {
-      var duration = Duration(
-          milliseconds: ((Random().nextDouble() + 20) * 1000)
-              .toInt()); // Example duration
+      var duration = Duration(seconds: 60 + i); // Example duration
       var dot = Dot(
         color: getRandomColor(),
         loopDuration: duration,
-        curve: getRandomCurve(),
       );
       dot.initializeController(this);
       dots.add(dot);
