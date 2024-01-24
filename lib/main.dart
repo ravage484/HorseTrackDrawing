@@ -21,13 +21,22 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
     super.initState();
     // Initialize multiple dots here
     for (int i = 0; i < numberOfDots; i++) {
-      var duration = Duration(seconds: 60 + i); // Example duration
+      var duration = Duration(seconds: 10 + i); // Example duration
       var dot = Dot(
         color: getRandomColor(),
         loopDuration: duration,
       );
       dot.initializeController(this);
       dots.add(dot);
+    }// Start an animation status listener to update the UI
+
+    for (var dot in dots) {
+      dot.controller.addListener(() {
+        setState(() {
+          dot.updateProgress();
+          dots.sort((a, b) => b.progress.compareTo(a.progress)); // Sort based on progress
+        });
+      });
     }
   }
 
@@ -42,33 +51,48 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     Size screenSize = MediaQuery.of(context).size;
-    double startingWidthRatio = 0.9;
-    double startingHeightRatio = 0.3;
+    double startingWidthRatio = 0.7;
+    double startingHeightRatio = 0.1;
     Size trackSize = Size(
       screenSize.width * startingWidthRatio,
       screenSize.height * startingHeightRatio,
     );
 
+    
     return MaterialApp(
       title: 'Flutter Animation Demo',
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Animating Dot on Track'),
         ),
-        body: Center(
-          child: Stack(
-            children: dots.map((dot) {
-              return AnimatedBuilder(
-                animation: dot.controller,
-                builder: (context, child) {
-                  return CustomPaint(
-                    size: trackSize,
-                    painter: TrackAndDotPainter(dots: dots),
-                  );
-                },
-              );
-            }).toList(),
-          ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                size: trackSize,
+                painter: TrackAndDotPainter(dots: dots),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: screenSize.width * .2, // Adjust the width as needed
+                color: Colors.white.withOpacity(0.8), // Semi-transparent background
+                child: ListView.builder(
+                  itemCount: dots.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: Icon(Icons.circle, color: dots[index].color),
+                      title: Text("${index + 1}"),
+                      trailing: Text("${(dots[index].progress * 100).toStringAsFixed(0)}%"),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
