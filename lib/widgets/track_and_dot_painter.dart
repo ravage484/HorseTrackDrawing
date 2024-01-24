@@ -25,37 +25,37 @@ class TrackAndDotPainter extends CustomPainter {
     // Center of the canvas
     final centerOffset = Offset(size.width / 2, size.height / 2);
     final trackPath = Path()
-    ..addRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: centerOffset, width: size.width, height: size.height),
-      Radius.circular(size.height / 2),
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: centerOffset, width: size.width, height: size.height),
+        Radius.circular(size.height / 2),
       ));
 
     // Draw the filled track
     canvas.drawPath(trackPath, trackFillPaint);
-    
+
     // Draw the track outline
     canvas.drawPath(trackPath, trackOutlinePaint);
-    
+
     // Paint each animated dot with white outlines
     for (var dot in dots) {
-      // Get the current progress of the animation
-      final progress = dot.controller.value;
+      // Use the value from the CurvedAnimation
+      final progress = dot.animation.value;
 
-      // Get the dot's properties
       final dotPaint = Paint()..color = dot.color;
       final outlinePaint = Paint()..color = Colors.white;
       const dotRadius = 10.0;
       const outlineWidth = 4.0;
-      final pathMetrics = trackPath.computeMetrics();
-      final metric = pathMetrics.first;
+
+      final pathMetrics = trackPath.computeMetrics(forceClosed: false);
+      final metric = pathMetrics.first; // Assumes a single path for the track
 
       // Calculate the position of the dot based on the progress of the animation
-      final dotPath = metric.extractPath(
-        0.0,
-        metric.length * progress,
-      );
-      final dotPosition = dotPath.computeMetrics().first.getTangentForOffset(dotPath.computeMetrics().first.length)?.position ?? Offset.zero;
-      
+      final totalLength = metric.length;
+      final dotPosition =
+          metric.getTangentForOffset(totalLength * progress)?.position ??
+              Offset.zero;
+
       // Draw the outline
       canvas.drawCircle(dotPosition, dotRadius + outlineWidth, outlinePaint);
 
@@ -66,5 +66,4 @@ class TrackAndDotPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-
 }
