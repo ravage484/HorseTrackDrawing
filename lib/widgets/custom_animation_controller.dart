@@ -11,4 +11,15 @@ class CustomAnimationController extends AnimationController {
       this.repeat();
     }
   }
+
+  // Method to update the duration of the animation
+  void updateDuration(Duration duration) {
+    this.duration = duration;
+  }
+
+  // event handler for the animation
+  void onTick(void Function() callback) {
+    this.addListener(callback);
+  }
+  
 }

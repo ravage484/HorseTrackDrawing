@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:horse_track_drawing/models/dot.dart';
+import 'package:horse_track_drawing/models/dot_combo.dart';
+import 'package:horse_track_drawing/utils/utils_track_generation.dart'; 
 
 // Custom painter class for drawing the track and animated dot
 class TrackAndDotPainter extends CustomPainter {
-  final List<Dot> dots;
+  final List<DotCombo> dots;
 
   TrackAndDotPainter({required this.dots});
 
@@ -23,11 +24,9 @@ class TrackAndDotPainter extends CustomPainter {
     // Define the track path (from center)
     // Center of the canvas
     final centerOffset = Offset(size.width / 2, size.height / 2);
-    final trackPath = Path()
-    ..addRRect(RRect.fromRectAndRadius(
-      Rect.fromCenter(center: centerOffset, width: size.width - trackOutlinePaint.strokeWidth, height: size.height),
-      Radius.circular(size.height / 2),
-      ));
+    
+    // Generate the track path
+    Path trackPath = generateTrackPathStandardOval(centerOffset, size, trackOutlinePaint);
 
     // Draw the filled track
     canvas.drawPath(trackPath, trackFillPaint);
@@ -36,7 +35,9 @@ class TrackAndDotPainter extends CustomPainter {
     canvas.drawPath(trackPath, trackOutlinePaint);
     
     // Paint each animated dot with white outlines
-    for (var dot in dots) {
+    for (var dotCombo in dots) {
+      var dot = dotCombo.dot;
+      
       // Get the current progress of the animation
       final progress = dot.controller.value;
 
@@ -65,5 +66,4 @@ class TrackAndDotPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-
 }

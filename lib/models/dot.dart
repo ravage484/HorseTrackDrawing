@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:horse_track_drawing/widgets/custom_animation_controller.dart';
+import 'package:horse_track_drawing/models/driver.dart';
 
 class Dot {
   final String name;
@@ -16,5 +17,13 @@ class Dot {
 
   void updateProgress() {
     progress = controller.value;
+  }
+
+  void dispose() {
+    controller.dispose();
+  }
+
+  void toggle() {
+    controller.toggle();
   }
 }

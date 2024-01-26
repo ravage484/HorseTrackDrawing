@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For RawKeyboardListener
 import 'dart:math';
-import 'models/dot.dart'; // Adjust the import path based on your project structure
-import 'widgets/track_and_dot_painter.dart'; // Adjust the import path
-import 'utils/utils_colors.dart'; // Adjust the import path
-import 'package:horse_track_drawing/resources/kentucky_derby_winners.dart'; // Adjust the import path
+import 'models/dot.dart';
+import 'widgets/track_and_dot_painter.dart'; 
+import 'utils/utils_colors.dart'; 
+import 'package:horse_track_drawing/resources/kentucky_derby_winners.dart'; 
+import 'package:horse_track_drawing/models/dot_combo.dart'; 
+import 'package:horse_track_drawing/models/driver.dart';
 
 void main() => runApp(const MyApp());
 
@@ -16,7 +18,7 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> with TickerProviderStateMixin {
-  List<Dot> dots = [];
+  List<DotCombo> dots = [];
   int numberOfDots = 20; // Replace 10 with the desired number of dots
   final FocusNode _focusNode = FocusNode();
   
@@ -44,15 +46,31 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
         loopDuration: duration,
       );
 
+      // Initialize a driver
+      var driver = Driver(
+        name: randomName,
+        control: Random().nextDouble(),
+        aggression: Random().nextDouble(),
+        consistency: Random().nextDouble(),
+        experience: Random().nextDouble(),
+      );
+
       // Initialize the controller
       dot.initializeController(this);
 
+      // Initialize the dot combo
+      var dotCombo = DotCombo(
+        dot: dot,
+        driver: driver,
+      );
+
       // Add the dot to the list
-      dots.add(dot);
+      dots.add(dotCombo);
     }
 
     // Add a listener to each controller
-    for (var dot in dots) {
+    for (var dotCombo in dots) {
+      var dot = dotCombo.dot;
       dot.controller.addListener(() {
         setState(() {
           // Update the progress of each dot
@@ -67,8 +85,8 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    for (var dot in dots) {
-      dot.controller.dispose();
+    for (var dotCombo in dots) {
+      dotCombo.dispose();
     }
     super.dispose();
   }
@@ -127,8 +145,9 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
       if (event.logicalKey == LogicalKeyboardKey.space) {
         // Code to handle spacebar press
         // For example, zoom in on a dot or perform any other action
-        for (var dot in dots) {
-          dot.controller.toggle();
+        for (var dotCombo in dots) {
+          var dot = dotCombo.dot;
+          dot.toggle();
         }
       }
     }
