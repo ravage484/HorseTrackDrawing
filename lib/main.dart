@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For RawKeyboardListener
 import 'dart:math';
 import 'models/dot.dart';
-import 'widgets/track_and_dot_painter.dart'; 
+import 'widgets/game_painter.dart'; 
 import 'utils/utils_colors.dart'; 
+import 'resources/configurations.dart';
 import 'package:horse_track_drawing/resources/kentucky_derby_winners.dart'; 
 import 'package:horse_track_drawing/models/dot_combo.dart'; 
 import 'package:horse_track_drawing/models/driver.dart';
+import 'package:horse_track_drawing/utils/utils_track_generation.dart'; 
 
 void main() => runApp(const MyApp());
 
@@ -19,9 +21,11 @@ class MyApp extends StatefulWidget {
 
 class MyAppState extends State<MyApp> with TickerProviderStateMixin {
   List<DotCombo> dots = [];
-  int numberOfDots = 20; // Replace 10 with the desired number of dots
+  int numberOfDots = Configurations.numberOfDots; // Replace 10 with the desired number of dots
   final FocusNode _focusNode = FocusNode();
-  
+  bool trackGenerated = false;
+  Path trackPath = Path();
+
   @override
   void initState() {
     super.initState();
@@ -98,8 +102,16 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
     double listWidthRatio = 0.2; // 20% of screen width for the list
     Size trackSize = Size(
       screenSize.width * trackWidthRatio,
-      screenSize.height * 0.3, // Same as before
+      screenSize.height * 0.8, // Same as before
     );
+    Offset trackCenter = Offset(trackSize.width / 2, trackSize.height / 2);
+
+
+    if (!trackGenerated) {
+      trackGenerated = true;
+      // trackPath = generateRacetrackUsingGenerator(trackSize, 8, 500, 5, 5);
+      trackPath = generateTrackPathStandardOval(trackCenter, trackSize, Configurations.trackOutlinePaint);
+    }
 
     return MaterialApp(
       title: 'Horse Track Animation',
@@ -115,7 +127,7 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
               // Track
               CustomPaint(
                 size: trackSize,
-                painter: TrackAndDotPainter(dots: dots),
+                painter: GamePainter(trackPath: trackPath, dots: dots),
               ),
               // Dot List
               Container(

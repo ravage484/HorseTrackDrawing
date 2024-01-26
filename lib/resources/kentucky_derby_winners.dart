@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 // A string list of Kentucky Derby winners
 const List<String> KENTUCKY_DERBY_WINNERS = [
   "Aristides",
