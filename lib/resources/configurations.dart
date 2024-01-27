@@ -16,4 +16,10 @@ class Configurations {
   static Paint trackFillPaint = Paint()
     ..color = Colors.green[800]!
     ..style = PaintingStyle.fill;
+
+  // Minimum duration for a full loop at 100% performance
+  static const minDurationMs = 15000; 
+
+  // Maximum duration at 0% performance
+  static const maxDurationMs = 60000; 
 }

@@ -1,13 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:horse_track_drawing/models/dot_combo.dart';
+import 'package:horse_track_drawing/models/race_entity.dart';
 import 'package:horse_track_drawing/resources/configurations.dart';
 
 // Custom painter class for drawing the track and animated dot
 class GamePainter extends CustomPainter {
-  final List<DotCombo> dots;
+  final List<RaceEntity> raceEntities;
   final Path trackPath;
 
-  GamePainter({required this.dots, required this.trackPath});
+  GamePainter({required this.raceEntities, required this.trackPath});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -19,15 +20,13 @@ class GamePainter extends CustomPainter {
     canvas.drawPath(trackPath, Configurations.trackOutlinePaint);
     
     // Paint each animated dot with white outlines
-    for (var dotCombo in dots) {
+    for (var re in raceEntities) {
       try {
-        var dot = dotCombo.dot;
-        
         // Get the current progress of the animation
-        final progress = dot.controller.value;
+        final progress = re.controller.value;
 
         // Get the dot's properties
-        final dotPaint = Paint()..color = dot.color;
+        final dotPaint = Paint()..color = re.color;
         final outlinePaint = Paint()..color = Colors.white;
         const dotRadius = 10.0;
         const outlineWidth = 4.0;
@@ -47,7 +46,9 @@ class GamePainter extends CustomPainter {
         // Draw the dot
         canvas.drawCircle(dotPosition, dotRadius, dotPaint);
       } catch (e) {
-        print(e);
+        if (kDebugMode) {
+          print(e);
+        }
       }
     }
   }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For RawKeyboardListener
+import 'package:horse_track_drawing/utils/utils_other.dart';
 import 'dart:math';
-import 'models/dot.dart';
+import 'models/vehicle.dart';
 import 'widgets/game_painter.dart'; 
 import 'utils/utils_colors.dart'; 
 import 'resources/configurations.dart';
 import 'package:horse_track_drawing/resources/kentucky_derby_winners.dart'; 
-import 'package:horse_track_drawing/models/dot_combo.dart'; 
+import 'package:horse_track_drawing/models/race_entity.dart'; 
 import 'package:horse_track_drawing/models/driver.dart';
 import 'package:horse_track_drawing/utils/utils_track_generation.dart'; 
 
@@ -20,7 +21,7 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> with TickerProviderStateMixin {
-  List<DotCombo> dots = [];
+  List<RaceEntity> raceEntities = [];
   int numberOfDots = Configurations.numberOfDots; // Replace 10 with the desired number of dots
   final FocusNode _focusNode = FocusNode();
   bool trackGenerated = false;
@@ -39,49 +40,43 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
     
     // Initialize multiple dots here
     for (int i = 0; i < numberOfDots; i++) {
-      var duration = Duration(seconds: 10 + i); // Example duration
       int randomIndex = Random().nextInt(names.length);
       String randomName = names.removeAt(randomIndex);
 
       // Initialize a dot
-      var dot = Dot(
+      var vehicle = Vehicle(
         name: randomName,
         color: getRandomColor(),
-        loopDuration: duration,
       );
 
       // Initialize a driver
-      var driver = Driver(
-        name: randomName,
-        control: Random().nextDouble(),
-        aggression: Random().nextDouble(),
-        consistency: Random().nextDouble(),
-        experience: Random().nextDouble(),
-      );
-
-      // Initialize the controller
-      dot.initializeController(this);
+      Driver driver = generateRandomDriver(randomName);
 
       // Initialize the dot combo
-      var dotCombo = DotCombo(
-        dot: dot,
+      var raceEntity = RaceEntity(
+        vehicle: vehicle,
         driver: driver,
       );
 
+      // Initialize the controller
+      raceEntity.initializeController(this);
+
+      // Adjust the animation duration based on the performance score
+      raceEntity.adjustLoopDuration(); 
+      
       // Add the dot to the list
-      dots.add(dotCombo);
+      raceEntities.add(raceEntity);
     }
 
     // Add a listener to each controller
-    for (var dotCombo in dots) {
-      var dot = dotCombo.dot;
-      dot.controller.addListener(() {
+    for (var re in raceEntities) {
+      re.controller.addListener(() {
         setState(() {
           // Update the progress of each dot
-          dot.updateProgress();
+          re.updateProgress();
 
           // Sort the dots based on progress
-          dots.sort((a, b) => b.progress.compareTo(a.progress)); // Sort based on progress
+          raceEntities.sort((a, b) => b.progress.compareTo(a.progress)); // Sort based on progress
         });
       });
     }
@@ -89,7 +84,7 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    for (var dotCombo in dots) {
+    for (var dotCombo in raceEntities) {
       dotCombo.dispose();
     }
     super.dispose();
@@ -109,8 +104,8 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
     if (!trackGenerated) {
       trackGenerated = true;
-      // trackPath = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
-      trackPath = generateTrackPathStandardOval(trackCenter, trackSize, Configurations.trackOutlinePaint);
+      trackPath = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
+      // trackPath = generateTrackPathStandardOval(trackCenter, trackSize, Configurations.trackOutlinePaint);
     }
 
     return MaterialApp(
@@ -127,19 +122,19 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
               // Track
               CustomPaint(
                 size: trackSize,
-                painter: GamePainter(trackPath: trackPath, dots: dots),
+                painter: GamePainter(trackPath: trackPath, raceEntities: raceEntities),
               ),
               // Dot List
               Container(
                 width: screenSize.width * listWidthRatio,
                 color: Colors.white.withOpacity(0.8),
                 child: ListView.builder(
-                  itemCount: dots.length,
+                  itemCount: raceEntities.length,
                   itemBuilder: (context, index) {
                     return ListTile(
-                      leading: Icon(Icons.circle, color: dots[index].color),
-                      title: Text(dots[index].name),
-                      trailing: Text("${(dots[index].progress * 100).toStringAsFixed(0)}%"),
+                      leading: Icon(Icons.circle, color: raceEntities[index].color),
+                      title: Text(raceEntities[index].name),
+                      trailing: Text("${(raceEntities[index].progress * 100).toStringAsFixed(0)}%"),
                     );
                   },
                 ),
@@ -157,9 +152,8 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
       if (event.logicalKey == LogicalKeyboardKey.space) {
         // Code to handle spacebar press
         // For example, zoom in on a dot or perform any other action
-        for (var dotCombo in dots) {
-          var dot = dotCombo.dot;
-          dot.toggle();
+        for (var re in raceEntities) {
+          re.toggle();
         }
       }
     }
