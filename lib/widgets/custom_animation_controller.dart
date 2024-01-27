@@ -5,10 +5,10 @@ class CustomAnimationController extends AnimationController {
   // Common functionality or properties for all painters
 
   void toggle() {
-    if (this.isAnimating) {
-      this.stop();
+    if (isAnimating) {
+      stop();
     } else {
-      this.repeat();
+      repeat();
     }
   }
 
@@ -19,7 +19,7 @@ class CustomAnimationController extends AnimationController {
 
   // event handler for the animation
   void onTick(void Function() callback) {
-    this.addListener(callback);
+    addListener(callback);
   }
   
 }

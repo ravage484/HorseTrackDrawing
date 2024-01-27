@@ -109,7 +109,7 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
     if (!trackGenerated) {
       trackGenerated = true;
-      // trackPath = generateRacetrackUsingGenerator(trackSize, 8, 500, 5, 5);
+      // trackPath = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
       trackPath = generateTrackPathStandardOval(trackCenter, trackSize, Configurations.trackOutlinePaint);
     }
 

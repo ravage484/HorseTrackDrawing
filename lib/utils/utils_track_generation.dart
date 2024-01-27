@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:horse_track_drawing/utils/utils_algorithms.dart';
+import 'package:horse_track_drawing/utils/utils_extensions.dart';
 
 /// Generate a standard oval track path
 Path generateTrackPathStandardOval(Offset centerOffset, Size size, Paint trackOutlinePaint) {
@@ -13,6 +14,7 @@ Path generateTrackPathStandardOval(Offset centerOffset, Size size, Paint trackOu
   return trackPath;
 }
 
+/// Generate a track using the midpoint displacement algorithm
 Path generateTrackPathUsingGenerator(Size size, int numberOfPoints, double displacement, double minDistance, double minAngle) {
 
     // Create a track generator with specified parameters
@@ -28,6 +30,7 @@ Path generateTrackPathUsingGenerator(Size size, int numberOfPoints, double displ
     return generator.generateTrack();
 }
 
+/// Class for generating a track using the midpoint displacement algorithm
 class TrackGenerator {
   Size area;
   int numberOfPoints;
@@ -125,89 +128,100 @@ class TrackGenerator {
     return points;
   }
 
+
+  // /// v1
   // Path interpolateWithSplines(List<Offset> points) {
   //   Path path = Path();
-
   //   if (points.isEmpty) return path;
 
-  //   // Move to the first point
-  //   path.moveTo(points.first.dx, points.first.dy);
+  //   // The first and last control points are determined by the tangent
+  //   // at the midpoint between the last and first points.
+  //   final Offset firstPoint = points.first;
+  //   final Offset lastPoint = points.last;
+  //   final Offset tangent = (firstPoint - lastPoint) / 2;
 
-  //   for (int i = 1; i < points.length - 2; i++) {
-  //     final Offset p0 = points[i];
-  //     final Offset p1 = points[i + 1];
+  //   // The control points for the first point
+  //   Offset firstControlPoint = firstPoint + tangent;
+  //   Offset lastControlPoint = lastPoint - tangent;
 
-  //     // Calculate the control point for the Bezier curve.
-  //     // This is the midpoint of the line segment connecting two points.
-  //     final Offset controlPoint = Offset((p0.dx + p1.dx) / 2, (p0.dy + p1.dy) / 2);
+  //   path.moveTo(firstPoint.dx, firstPoint.dy);
 
-  //     // Draw the quadratic Bezier curve to the control point,
-  //     // then draw a line to the next point.
-  //     path.quadraticBezierTo(p0.dx, p0.dy, controlPoint.dx, controlPoint.dy);
-  //     path.lineTo(p1.dx, p1.dy);
+  //   for (int i = 0; i < points.length; i++) {
+  //     final Offset currentPoint = points[i];
+  //     final Offset nextPoint = points[(i + 1) % points.length];
+  //     final Offset nextTangent = (points[(i + 2) % points.length] - currentPoint) / 2;
+
+  //     final Offset nextControlPoint = nextPoint - nextTangent;
+
+  //     path.cubicTo(
+  //       firstControlPoint.dx, firstControlPoint.dy,
+  //       lastControlPoint.dx, lastControlPoint.dy,
+  //       nextPoint.dx, nextPoint.dy,
+  //     );
+
+  //     firstControlPoint = nextPoint + nextTangent;
+  //     lastControlPoint = nextControlPoint;
   //   }
 
-  //   // Handle the last point to close the loop, drawing a curve back to the start.
-  //   final Offset last = points.last;
-  //   final Offset secondLast = points[points.length - 2];
-  //   final Offset controlPoint = Offset((last.dx + secondLast.dx) / 2, (last.dy + secondLast.dy) / 2);
-  //   path.quadraticBezierTo(secondLast.dx, secondLast.dy, controlPoint.dx, controlPoint.dy);
-  //   path.lineTo(last.dx, last.dy);
-  //   path.lineTo(points.first.dx, points.first.dy);
+  //   // Close the path
+  //   path.close();
 
   //   return path;
   // }
   Path interpolateWithSplines(List<Offset> points) {
     Path path = Path();
-
     if (points.isEmpty) return path;
 
-    // Move to the first point
+    // Start the path
     path.moveTo(points.first.dx, points.first.dy);
 
-    // If there are not enough points for cubic Bezier, fall back to a simple line.
-    if (points.length < 3) {
-      for (Offset point in points) {
-        path.lineTo(point.dx, point.dy);
-      }
+    if (points.length == 2) {
+      // If there are exactly two points, just draw a line.
+      path.lineTo(points.last.dx, points.last.dy);
       return path;
     }
 
-    // Calculate control points for the cubic Bezier curves
-    for (int i = 1; i < points.length - 2; i++) {
-      final Offset p0 = points[i - 1];
-      final Offset p1 = points[i];
-      final Offset p2 = points[i + 1];
-      final Offset p3 = points[i + 2];
+    // Calculate the first control points
+    Offset firstControlPoint = getControlPoint(points.last, points.first, points[1]);
+    Offset lastControlPoint = firstControlPoint;
 
-      // Control point 1: halfway between p0 and p1
-      final Offset cp1 = Offset((p0.dx + p1.dx) / 2, (p0.dy + p1.dy) / 2);
-      // Control point 2: p1
-      final Offset cp2 = p1;
-      // Control point 3: p1
-      final Offset cp3 = p1;
-      // Control point 4: halfway between p1 and p2
-      final Offset cp4 = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
+    for (int i = 0; i < points.length; i++) {
+      final Offset current = points[i];
+      final Offset next = points[(i + 1) % points.length];
+      final Offset afterNext = points[(i + 2) % points.length];
 
-      // Draw the cubic Bezier curve
-      path.cubicTo(cp2.dx, cp2.dy, cp3.dx, cp3.dy, cp4.dx, cp4.dy);
+      // Calculate control points for the current segment
+      Offset nextControlPoint = getControlPoint(current, next, afterNext);
+
+      // Draw the cubic Bezier curve segment
+      path.cubicTo(
+        lastControlPoint.dx,
+        lastControlPoint.dy,
+        current.dx,
+        current.dy,
+        (current.dx + nextControlPoint.dx) / 2,
+        (current.dy + nextControlPoint.dy) / 2,
+      );
+
+      // Update the last control point for the next segment
+      lastControlPoint = nextControlPoint;
     }
 
-    // Handle the last curve back to the start to close the loop.
-    final Offset last = points.last;
-    final Offset secondLast = points[points.length - 2];
-    // Control point 1: halfway between the second last and the last point
-    final Offset cp1 = Offset((secondLast.dx + last.dx) / 2, (secondLast.dy + last.dy) / 2);
-    // Control point 2: last point
-    final Offset cp2 = last;
-    // Control point 3: last point
-    final Offset cp3 = last;
-    // Control point 4: first point
-    final Offset cp4 = points.first;
-
-    path.cubicTo(cp2.dx, cp2.dy, cp3.dx, cp3.dy, cp4.dx, cp4.dy);
+    // Close the path
+    path.close();
 
     return path;
   }
 
+  Offset getControlPoint(Offset before, Offset current, Offset after) {
+    // Calculate the tangent vector for the current point
+    Offset tangent = (after - before).normalize();
+
+    // The distance between the current point and the next point
+    // should be proportional to the length of the segment
+    double length = (current - after).distance * 0.25; // Adjust this factor as needed
+
+    // Calculate and return the control point
+    return current + tangent * length;
+  }
 }
