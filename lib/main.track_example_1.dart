@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -16,11 +14,11 @@ class MyApp extends StatelessWidget {
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Horse Track Shape'),
+          title: Text('Horse Track Shape'),
         ),
         body: Center(
           child: CustomPaint(
-            size: const Size(1200, 600), // You can adjust the size as needed
+            size: Size(1200, 600), // You can adjust the size as needed
             painter: TrackShapePainter(),
           ),
         ),
