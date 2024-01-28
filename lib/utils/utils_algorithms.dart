@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:horse_track_drawing/utils/utils_other.dart';
@@ -47,4 +48,27 @@ List<Offset> computeConvexHull(List<Offset> points) {
   }
 
   return stack;
+}
+
+/// Calculate the angle between two lines
+double calculateAngleBetweenLines(Offset xStart, Offset xEnd, Offset yEnd) {
+  // Convert line segments to vectors
+  Offset vx = xEnd - xStart; // Vector for line X
+  Offset vy = yEnd - xEnd; // Vector for line Y, using xEnd as the start point
+
+  // Calculate the dot product of vx and vy
+  double dotProduct = vx.dx * vy.dx + vx.dy * vy.dy;
+
+  // Calculate the magnitudes of vx and vy
+  double magnitudeVx = sqrt(vx.dx * vx.dx + vx.dy * vx.dy);
+  double magnitudeVy = sqrt(vy.dx * vy.dx + vy.dy * vy.dy);
+
+  // Calculate the cosine of the angle
+  double cosTheta = dotProduct / (magnitudeVx * magnitudeVy);
+
+  // Calculate the angle in radians and then convert to degrees
+  double angleRadians = acos(cosTheta); // Angle in radians
+  double angleDegrees = angleRadians * 180 / pi; // Convert to degrees
+
+  return angleDegrees;
 }

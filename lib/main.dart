@@ -99,13 +99,11 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
       screenSize.width * trackWidthRatio,
       screenSize.height * 0.8, // Same as before
     );
-    Offset trackCenter = Offset(trackSize.width / 2, trackSize.height / 2);
-
 
     if (!trackGenerated) {
       trackGenerated = true;
       trackPath = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
-      // trackPath = generateTrackPathStandardOval(trackCenter, trackSize, Configurations.trackOutlinePaint);
+      trackPath = generateTrackPathStandardOval(trackSize);
     }
 
     return MaterialApp(

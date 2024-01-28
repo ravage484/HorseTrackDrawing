@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
-import 'dart:ui';
+import 'package:horse_track_drawing/models/track_segment.dart';
+import 'package:horse_track_drawing/resources/configurations.dart';
 import 'package:horse_track_drawing/utils/utils_algorithms.dart';
 import 'package:horse_track_drawing/utils/utils_extensions.dart';
+import 'dart:math';
+import 'dart:ui';
 
 /// Generate a standard oval track path
-Path generateTrackPathStandardOval(Offset centerOffset, Size size, Paint trackOutlinePaint) {
+Path generateTrackPathStandardOval(Size trackSize) {
+  
+  Offset centerOffset = Offset(trackSize.width / 2, trackSize.height / 2);
   final trackPath = Path()
   ..addRRect(RRect.fromRectAndRadius(
-    Rect.fromCenter(center: centerOffset, width: size.width - trackOutlinePaint.strokeWidth, height: size.height),
-    Radius.circular(size.height / 2),
+    Rect.fromCenter(center: centerOffset, width: trackSize.width - Configurations.trackOutlinePaint.strokeWidth, height: trackSize.height),
+    Radius.circular(trackSize.height / 2),
     ));
   return trackPath;
 }
@@ -38,6 +42,8 @@ class TrackGenerator {
   double minDistance;
   double minAngle;
 
+  List<TrackSegment> trackSegments = [];
+
   TrackGenerator({
     required this.area,
     required this.numberOfPoints,
@@ -46,6 +52,7 @@ class TrackGenerator {
     required this.minAngle,
   });
 
+  /// Generate a track using the midpoint displacement algorithm
   Path generateTrack() {
     // Step 1: Generate random points
     List<Offset> randomPoints = generateRandomPoints(area, numberOfPoints);
@@ -61,7 +68,11 @@ class TrackGenerator {
 
     // Step 5: Interpolate points with splines
     Path finalTrackPath = interpolateWithSplines(pushedApartPoints);
+    
+    // Step 6: Idenfity track segments from interpolated path
+    // List<TrackSegment> trackSegments = pathToTrackSegments(finalTrackPath);
 
+    // Return the final track path
     return finalTrackPath;
   }
 
@@ -128,46 +139,6 @@ class TrackGenerator {
     return points;
   }
 
-
-  // /// v1
-  // Path interpolateWithSplines(List<Offset> points) {
-  //   Path path = Path();
-  //   if (points.isEmpty) return path;
-
-  //   // The first and last control points are determined by the tangent
-  //   // at the midpoint between the last and first points.
-  //   final Offset firstPoint = points.first;
-  //   final Offset lastPoint = points.last;
-  //   final Offset tangent = (firstPoint - lastPoint) / 2;
-
-  //   // The control points for the first point
-  //   Offset firstControlPoint = firstPoint + tangent;
-  //   Offset lastControlPoint = lastPoint - tangent;
-
-  //   path.moveTo(firstPoint.dx, firstPoint.dy);
-
-  //   for (int i = 0; i < points.length; i++) {
-  //     final Offset currentPoint = points[i];
-  //     final Offset nextPoint = points[(i + 1) % points.length];
-  //     final Offset nextTangent = (points[(i + 2) % points.length] - currentPoint) / 2;
-
-  //     final Offset nextControlPoint = nextPoint - nextTangent;
-
-  //     path.cubicTo(
-  //       firstControlPoint.dx, firstControlPoint.dy,
-  //       lastControlPoint.dx, lastControlPoint.dy,
-  //       nextPoint.dx, nextPoint.dy,
-  //     );
-
-  //     firstControlPoint = nextPoint + nextTangent;
-  //     lastControlPoint = nextControlPoint;
-  //   }
-
-  //   // Close the path
-  //   path.close();
-
-  //   return path;
-  // }
   Path interpolateWithSplines(List<Offset> points) {
     Path path = Path();
     if (points.isEmpty) return path;
@@ -224,4 +195,32 @@ class TrackGenerator {
     // Calculate and return the control point
     return current + tangent * length;
   }
+}
+
+List<TrackSegment> pathToTrackSegments(Path path) {
+  final List<TrackSegment> segments = [];
+  final pathMetrics = path.computeMetrics(); // Get the metrics of the path
+
+  for (final metric in pathMetrics) {
+    final pathLength = metric.length;
+
+    // Use a small delta to get the start and end points of the segment
+    // We use delta because getTangentForOffset doesn't work well exactly at 0 or the maximum length
+    const double delta = 0.01;
+
+    // Get the start point tangent
+    final startTangent = metric.getTangentForOffset(delta);
+    // Get the end point tangent
+    final endTangent = metric.getTangentForOffset(pathLength - delta);
+
+    if (startTangent != null && endTangent != null) {
+      final startOffset = startTangent.position;
+      final endOffset = endTangent.position;
+      // final distance = (endOffset - startOffset).distance; // Calculate the distance between start and end
+
+      segments.add(TrackSegment(start: startOffset, end: endOffset));
+    }
+  }
+
+  return segments;
 }
