@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For RawKeyboardListener
+import 'package:horse_track_drawing/models/track/track.dart';
+import 'package:horse_track_drawing/models/track/track_segment.dart';
 import 'package:horse_track_drawing/utils/utils_other.dart';
 import 'dart:math';
 import 'models/vehicle.dart';
@@ -21,11 +25,17 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> with TickerProviderStateMixin {
+  // Initialize the race entities
   List<RaceEntity> raceEntities = [];
-  int numberOfDots = Configurations.numberOfDots; // Replace 10 with the desired number of dots
+  int numberOfRaceEntities = Configurations.numberOfRaceEntities; // Replace 10 with the desired number of dots
   final FocusNode _focusNode = FocusNode();
+
+  // Initialize the game empty track
+  Track track = Track(); //Track(trackSegments: trackSegments);
+  Size trackSize = const Size(1000, 800);
   bool trackGenerated = false;
-  Path trackPath = Path();
+
+  Timer? raceTimer;
 
   @override
   void initState() {
@@ -35,11 +45,25 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
       _focusNode.requestFocus();
     });
 
+    // Generate the track path with a standard size, independent of the screen size
+    // track = generateTrackPathStandardOval(trackSize);
+    // track = generateTrackPathUsingGenerator(trackSize, 9, 500, 5, 5);
+    // trackGenerated = true;
+
+    TrackGenerator tg = TrackGenerator(
+      area: trackSize,
+      numberOfPoints: 9,
+      displacement: 500,
+      minDistance: 5,
+      minAngle: 5,
+    );
+    track = tg.generateTrack();
+
     // Copy the list of names
     var names = List<String>.from(KENTUCKY_DERBY_WINNERS); 
     
     // Initialize multiple dots here
-    for (int i = 0; i < numberOfDots; i++) {
+    for (int i = 0; i < numberOfRaceEntities; i++) {
       int randomIndex = Random().nextInt(names.length);
       String randomName = names.removeAt(randomIndex);
 
@@ -54,6 +78,7 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
       // Initialize the dot combo
       var raceEntity = RaceEntity(
+        track: track,
         vehicle: vehicle,
         driver: driver,
       );
@@ -80,10 +105,27 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
         });
       });
     }
+    startRace();
   }
+  void startRace() {
+    // Assuming you have a timer or an equivalent mechanism to update your race logic
+    raceTimer = Timer.periodic(Duration(milliseconds: 100), (timer) { // Adjust the interval as needed
+      for (var re in raceEntities) {
+        // Update progress and adjust speed for turn without calling setState
+        re.updateProgress();
+        re.adjustSpeedForTurn();
+      }
 
+      // Now, call setState to reflect any changes in the UI
+      setState(() {
+        // Sort the dots based on progress, or update any other UI-related state
+        raceEntities.sort((a, b) => b.progress.compareTo(a.progress));
+      });
+    });
+  }
   @override
   void dispose() {
+    raceTimer?.cancel();
     for (var dotCombo in raceEntities) {
       dotCombo.dispose();
     }
@@ -102,25 +144,32 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
     if (!trackGenerated) {
       trackGenerated = true;
-      trackPath = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
-      trackPath = generateTrackPathStandardOval(trackSize);
+      // // track = generateTrackPathUsingGenerator(trackSize,9, 500, 5, 5);
+      // TrackGenerator tg = TrackGenerator(
+      //   area: trackSize,
+      //   numberOfPoints: 9,
+      //   displacement: 500,
+      //   minDistance: 5,
+      //   minAngle: 5,
+      // );
+      // track = tg.generateTrack();
     }
 
     return MaterialApp(
-      title: 'Horse Track Animation',
+      title: 'Race Track Simulation',
       home: RawKeyboardListener(
         focusNode: _focusNode,
         onKey: _handleKeyPress,
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('Horse Track Animation'),
+            title: const Text('Race Track Simulation'),
           ),
           body: Row( // Use Row for horizontal alignment
             children: [
               // Track
               CustomPaint(
                 size: trackSize,
-                painter: GamePainter(trackPath: trackPath, raceEntities: raceEntities),
+                painter: GamePainter(track: track, raceEntities: raceEntities),
               ),
               // Dot List
               Container(

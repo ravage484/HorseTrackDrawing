@@ -1,25 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:horse_track_drawing/models/track_segment.dart';
+import 'package:horse_track_drawing/models/track/track.dart';
+import 'package:horse_track_drawing/models/track/track_segment.dart';
 import 'package:horse_track_drawing/resources/configurations.dart';
+import 'package:horse_track_drawing/resources/enums.dart';
 import 'package:horse_track_drawing/utils/utils_algorithms.dart';
 import 'package:horse_track_drawing/utils/utils_extensions.dart';
 import 'dart:math';
 import 'dart:ui';
 
-/// Generate a standard oval track path
-Path generateTrackPathStandardOval(Size trackSize) {
-  
-  Offset centerOffset = Offset(trackSize.width / 2, trackSize.height / 2);
-  final trackPath = Path()
-  ..addRRect(RRect.fromRectAndRadius(
-    Rect.fromCenter(center: centerOffset, width: trackSize.width - Configurations.trackOutlinePaint.strokeWidth, height: trackSize.height),
-    Radius.circular(trackSize.height / 2),
-    ));
-  return trackPath;
-}
-
 /// Generate a track using the midpoint displacement algorithm
-Path generateTrackPathUsingGenerator(Size size, int numberOfPoints, double displacement, double minDistance, double minAngle) {
+Track generateTrackPathUsingGenerator(Size size, int numberOfPoints, double displacement, double minDistance, double minAngle) {
 
     // Create a track generator with specified parameters
     TrackGenerator generator = TrackGenerator(
@@ -53,29 +43,117 @@ class TrackGenerator {
   });
 
   /// Generate a track using the midpoint displacement algorithm
-  Path generateTrack() {
+  Track generateTrack() {
     // Step 1: Generate random points
-    List<Offset> randomPoints = generateRandomPoints(area, numberOfPoints);
+    switch (Configurations.trackType) {
+      case TrackType.horseTrack:
+        return generateStandardOval();
+      case TrackType.standardOval:
+        return generateStandardOval();
+      case TrackType.midpointDisplacement:
+        return generateMidpointDisplacement();
+      case TrackType.square:
+        return generateDebugSquare();
+      default:
+        return generateStandardOval();
+    }
+  }
 
+  /// Generate a debug square track
+  Track generateDebugSquare() {
+    
+    // Define the square's corner points
+    Offset p0 = Offset(100, 100); // Top left
+    Offset p1 = Offset(500, 100); // Top right
+    Offset p2 = Offset(500, 500); // Bottom right
+    Offset p3 = Offset(100, 500); // Bottom left
+
+    List<Offset> points = [p0, p1, p2, p3];
+
+    // Create a simple square path
+    Path simplePath = Path()
+      ..moveTo(p0.dx, p0.dy)
+      ..lineTo(p1.dx, p1.dy)
+      ..lineTo(p2.dx, p2.dy)
+      ..lineTo(p3.dx, p3.dy)
+      ..close();
+
+    // Get the track segments
+    List<TrackSegment> trackSegments = pointsToTrackSegments(points);
+
+    // Build the track object
+    Track track = Track();
+    track.trackSegments = trackSegments;
+    track.trackPath = simplePath;
+
+    return track;
+  }
+
+  /// Generate a standard oval track
+  Track generateStandardOval() {
+    // Create a track
+    Track track = Track();
+
+    // Get the center of the trackSize
+    Offset centerOffset = Offset(area.width / 2, area.height / 2);
+
+    RRect oval = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: centerOffset, width: area.width, height: area.height),
+      Radius.circular(area.height / 2),
+    );
+    // Generate the path
+    final trackPath = Path()
+    ..addRRect(oval);
+    
+    // Get the track segments
+    // Create a list of points from the oval
+    List<Offset> points = [];
+    points.add(Offset(oval.left, oval.top));
+    points.add(Offset(oval.right, oval.top));
+    points.add(Offset(oval.right, oval.bottom));
+    points.add(Offset(oval.left, oval.bottom));
+
+    List<TrackSegment> trackSegments = pointsToTrackSegments(points);
+
+    // Build the track object
+    track.trackSegments = trackSegments;
+    track.trackPath = trackPath;
+
+    return track;
+  }
+
+  /// Generate a track using the midpoint displacement algorithm
+  Track generateMidpointDisplacement() {
+    List<Offset> randomPoints = generateRandomPoints(area, numberOfPoints);
+    
     // Step 2: Compute the convex hull
     List<Offset> convexHull = computeConvexHull(randomPoints);
-
+    
     // Step 3: Displace midpoints
     List<Offset> displacedMidpoints = displaceMidpoints(convexHull, displacement);
-
+    
     // Step 4: Push apart points
     List<Offset> pushedApartPoints = pushApartPoints(displacedMidpoints, minDistance, minAngle);
-
+    
     // Step 5: Interpolate points with splines
     Path finalTrackPath = interpolateWithSplines(pushedApartPoints);
+    finalTrackPath.close();
     
     // Step 6: Idenfity track segments from interpolated path
     // List<TrackSegment> trackSegments = pathToTrackSegments(finalTrackPath);
-
+    List<TrackSegment> trackSegments = pointsToTrackSegments(pushedApartPoints);
+    
+    // Step 7: Create a track
+    Track track = Track();
+    track.trackPoints = pushedApartPoints;
+    track.trackSegments = trackSegments;
+    track.trackPath = finalTrackPath;
+    
     // Return the final track path
-    return finalTrackPath;
+    return track;
   }
 
+  /// Generate a list of random points
   List<Offset> generateRandomPoints(Size area, int numberOfPoints) {
     final random = Random();
     List<Offset> points = [];
@@ -88,6 +166,7 @@ class TrackGenerator {
     return points;
   }
 
+  /// Displace the midpoints of a convex hull
   List<Offset> displaceMidpoints(List<Offset> convexHull, double displacement) {
     List<Offset> newPoints = [];
     for (int i = 0; i < convexHull.length; i++) {
@@ -101,6 +180,7 @@ class TrackGenerator {
     return newPoints;
   }
 
+  /// Push apart points to satisfy minimum distance and angle constraints
   List<Offset> pushApartPoints(List<Offset> points, double minDistance, double minAngle) {
     // Converts degrees to radians for angle comparison.
     double minAngleRad = minAngle * (pi / 180);
@@ -139,6 +219,7 @@ class TrackGenerator {
     return points;
   }
 
+  /// Interpolate points with splines
   Path interpolateWithSplines(List<Offset> points) {
     Path path = Path();
     if (points.isEmpty) return path;
@@ -184,6 +265,7 @@ class TrackGenerator {
     return path;
   }
 
+  /// Calculate the control point for a cubic Bezier curve
   Offset getControlPoint(Offset before, Offset current, Offset after) {
     // Calculate the tangent vector for the current point
     Offset tangent = (after - before).normalize();
@@ -197,10 +279,50 @@ class TrackGenerator {
   }
 }
 
+/// Convert a list of points to a list of track segments
+List<TrackSegment> pointsToTrackSegments(List<Offset> points) {
+  List<TrackSegment> segments = [];
+  for (int i = 0; i < points.length; i++) {
+    Offset start = points[i];
+    Offset end = points[(i + 1) % points.length];
+    Offset next = points[(i + 2) % points.length];
+    
+    TrackSegment trackSegment = TrackSegment(id: i, start: start, end: end);
+
+    // Calculate the angle between the current segment and the next
+    double angle = calculateAngleBetweenLines(start, end, next);
+    if (angle.isNaN || angle < Configurations.minAngle) {
+      // No need to adjust the speed
+      continue;
+    }
+    
+    // Map the angle to a deceleration factor. 
+    // Smaller angles (sharper turns) should result in greater deceleration.
+    // If the abs value of the angle is >= 180, then don't decelerate
+    double decelerationFactor = 1.0;
+    if (angle.abs() < 160) { 
+      decelerationFactor = mapAngleToDeceleration(angle);
+      trackSegment.decelerationFactor = decelerationFactor;
+    }
+
+    // Calculate the braking point for the current segment by 
+    Offset brakingPoint = calculateBrakingPoint(trackSegment.start, trackSegment.end, angle, decelerationFactor);
+    trackSegment.brakingPoint = end;
+
+    // Add the segment to the list
+    segments.add(trackSegment);
+  }
+  return segments;
+}
+
+/// Convert a path to a list of track segments
 List<TrackSegment> pathToTrackSegments(Path path) {
   final List<TrackSegment> segments = [];
-  final pathMetrics = path.computeMetrics(); // Get the metrics of the path
-
+  final pathMetrics = path.computeMetrics().toList();
+  
+  final pathSegments = pathMetrics.first.extractPath(0, pathMetrics.first.length,); // Get the metrics of the path
+  int id = 0;
+  
   for (final metric in pathMetrics) {
     final pathLength = metric.length;
 
@@ -218,7 +340,8 @@ List<TrackSegment> pathToTrackSegments(Path path) {
       final endOffset = endTangent.position;
       // final distance = (endOffset - startOffset).distance; // Calculate the distance between start and end
 
-      segments.add(TrackSegment(start: startOffset, end: endOffset));
+      segments.add(TrackSegment(id: id, start: startOffset, end: endOffset));
+      id++;
     }
   }
 

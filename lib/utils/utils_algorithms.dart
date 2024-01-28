@@ -72,3 +72,73 @@ double calculateAngleBetweenLines(Offset xStart, Offset xEnd, Offset yEnd) {
 
   return angleDegrees;
 }
+
+// Offset calculateBrakingPoint(Offset startPoint, double segmentLength, double turnAngle, double brakingFactor) {
+//   // Normalize the turn angle to [0, 180], where 180 is a straight line
+//   // and smaller angles represent sharper turns.
+//   double normalizedAngle = turnAngle.clamp(0, 180);
+
+//   // Calculate the braking distance as a function of the segment length, turn angle, and braking factor.
+//   // This is a heuristic and might need adjustment based on your specific needs.
+//   double brakingDistance = segmentLength * (1 - (normalizedAngle / 180)) * brakingFactor;
+
+//   // Ensure braking distance is within the segment
+//   brakingDistance = brakingDistance.clamp(0, segmentLength);
+
+//   // Calculate the braking point based on the braking distance.
+//   // Assuming the segment is along the X-axis for simplicity. Adjust based on actual segment orientation.
+//   Offset brakingPoint = Offset(startPoint.dx + (segmentLength - brakingDistance), startPoint.dy);
+
+//   return brakingPoint;
+// }
+Offset calculateBrakingPoint(Offset startPoint, Offset endPoint, double turnAngle, double brakingFactor) {
+  // Normalize the turn angle to [0, 180], where 180 is a straight line
+  // and smaller angles represent sharper turns.
+  double normalizedAngle = turnAngle.clamp(0, 180);
+
+  // Calculate the total segment length
+  double segmentLength = (endPoint - startPoint).distance;
+
+  // Calculate the braking distance as a function of the segment length, turn angle, and braking factor.
+  // This is a heuristic and might need adjustment based on your specific needs.
+  double brakingDistance = segmentLength * (1 - (normalizedAngle / 180)) * brakingFactor;
+
+  // Ensure braking distance is within the segment
+  brakingDistance = brakingDistance.clamp(0, segmentLength);
+
+  // Calculate the direction vector of the segment
+  Offset directionVector = (endPoint - startPoint) / segmentLength;
+
+  // Calculate the braking point by scaling the direction vector by the braking distance
+  // and adding the result to the start point
+  Offset brakingPoint = startPoint + directionVector * (segmentLength - brakingDistance);
+
+  return brakingPoint;
+}
+
+
+Offset getOffsetAtProgress(Path path, double progress) {
+  // Ensure progress is clamped between 0.0 and 1.0
+  progress = progress.clamp(0.0, 1.0);
+
+  // Extract path metrics to get path length and other properties
+  final pathMetrics = path.computeMetrics().first; // Assuming only one path or subpath
+
+  // Calculate the exact distance along the path for the given progress
+  final distance = pathMetrics.length * progress;
+
+  // Use getTangentForOffset to get position and tangent at the given distance
+  // Tangent provides the direction of the path at that point, which might be useful for rotations
+  final tangent = pathMetrics.getTangentForOffset(distance);
+
+  // Return the position at the given distance along the path
+  // If the tangent is null (which shouldn't normally happen if the progress is within bounds), return Offset.zero
+  return tangent?.position ?? Offset.zero;
+}
+
+/// Map the angle between the current segment and the next to a deceleration factor
+double mapAngleToDeceleration(double angle) {
+  // Example mapping function: sharper angles result in greater deceleration
+  const double maxAngle = 180.0; // Straight line
+  return 1 + (maxAngle - angle) / maxAngle; // Adjust this formula as needed
+}
