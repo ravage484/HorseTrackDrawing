@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:horse_track_drawing/models/track_segment.dart';
 import 'package:horse_track_drawing/resources/configurations.dart';
 import 'package:horse_track_drawing/utils/utils_algorithms.dart';
 import 'package:horse_track_drawing/utils/utils_extensions.dart';
@@ -41,8 +40,6 @@ class TrackGenerator {
   double displacement;
   double minDistance;
   double minAngle;
-
-  List<TrackSegment> trackSegments = [];
 
   TrackGenerator({
     required this.area,
@@ -195,32 +192,4 @@ class TrackGenerator {
     // Calculate and return the control point
     return current + tangent * length;
   }
-}
-
-List<TrackSegment> pathToTrackSegments(Path path) {
-  final List<TrackSegment> segments = [];
-  final pathMetrics = path.computeMetrics(); // Get the metrics of the path
-
-  for (final metric in pathMetrics) {
-    final pathLength = metric.length;
-
-    // Use a small delta to get the start and end points of the segment
-    // We use delta because getTangentForOffset doesn't work well exactly at 0 or the maximum length
-    const double delta = 0.01;
-
-    // Get the start point tangent
-    final startTangent = metric.getTangentForOffset(delta);
-    // Get the end point tangent
-    final endTangent = metric.getTangentForOffset(pathLength - delta);
-
-    if (startTangent != null && endTangent != null) {
-      final startOffset = startTangent.position;
-      final endOffset = endTangent.position;
-      // final distance = (endOffset - startOffset).distance; // Calculate the distance between start and end
-
-      segments.add(TrackSegment(start: startOffset, end: endOffset));
-    }
-  }
-
-  return segments;
 }
