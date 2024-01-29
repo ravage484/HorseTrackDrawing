@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:horse_track_drawing/models/track/track_segment.dart';
+=======
+>>>>>>> b453b65 (Squashed commit of the following:)
 import 'package:horse_track_drawing/utils/utils_other.dart';
 
 Offset _findLowestPoint(List<Offset> points) {
@@ -73,6 +76,7 @@ double calculateAngleBetweenLines(Offset xStart, Offset xEnd, Offset yEnd) {
   double angleDegrees = angleRadians * 180 / pi; // Convert to degrees
 
   return angleDegrees;
+<<<<<<< HEAD
 }
 
 /// Calculate the braking point for a given segment, turn angle, and braking factor
@@ -212,3 +216,6 @@ Offset calculatePerpendicularOffset(Offset point, double slope, double distance,
   // Return the new offset
   return Offset(point.dx + dx, point.dy + dy);
 }
+=======
+}
+>>>>>>> b453b65 (Squashed commit of the following:)
