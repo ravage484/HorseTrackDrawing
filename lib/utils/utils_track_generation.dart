@@ -51,7 +51,7 @@ class TrackGenerator {
       case TrackType.standardOval:
         return generateStandardOval();
       case TrackType.midpointDisplacement:
-        return generateMidpointDisplacement();
+        return generateMidpointDisplacement(debug: false);
       case TrackType.square:
         return generateDebugSquare();
       default:
@@ -63,10 +63,10 @@ class TrackGenerator {
   Track generateDebugSquare() {
     
     // Define the square's corner points
-    Offset p0 = Offset(100, 100); // Top left
-    Offset p1 = Offset(500, 100); // Top right
-    Offset p2 = Offset(500, 500); // Bottom right
-    Offset p3 = Offset(100, 500); // Bottom left
+    Offset p0 = const Offset(100, 100); // Top left
+    Offset p1 = const Offset(500, 100); // Top right
+    Offset p2 = const Offset(500, 500); // Bottom right
+    Offset p3 = const Offset(100, 500); // Bottom left
 
     List<Offset> points = [p0, p1, p2, p3];
 
@@ -123,11 +123,28 @@ class TrackGenerator {
   }
 
   /// Generate a track using the midpoint displacement algorithm
-  Track generateMidpointDisplacement() {
-    List<Offset> randomPoints = generateRandomPoints(area, numberOfPoints);
+  Track generateMidpointDisplacement({bool debug = false}) {
+    // Initialize the list of points
+    List<Offset> points = [];
+
+    // Step 1: Generate random points
+    if (debug) {
+      // Define the hexagon's corner points
+      Offset p0 = const Offset(100, 100); // Top left
+      Offset p1 = const Offset(500, 100); // Top right
+      Offset p2 = const Offset(600, 300); // Right
+      Offset p3 = const Offset(500, 500); // Bottom right
+      Offset p4 = const Offset(100, 500); // Bottom left
+      Offset p5 = const Offset(0, 300); // Left
+
+      points = [p0, p1, p2, p3, p4, p5];
+    } else {
+      // Generate random points
+      points = generateRandomPoints(area, numberOfPoints);
+    }
     
     // Step 2: Compute the convex hull
-    List<Offset> convexHull = computeConvexHull(randomPoints);
+    List<Offset> convexHull = computeConvexHull(points);
     
     // Step 3: Displace midpoints
     List<Offset> displacedMidpoints = displaceMidpoints(convexHull, displacement);
@@ -145,7 +162,10 @@ class TrackGenerator {
     
     // Step 7: Create a track
     Track track = Track();
-    track.trackPoints = pushedApartPoints;
+    track.allPoints = points;
+    track.trackPointsConvexHull = convexHull;
+    track.trackPointsDisplaced = displacedMidpoints;
+    track.trackPointsPushedApart = pushedApartPoints;
     track.trackSegments = trackSegments;
     track.trackPath = finalTrackPath;
     
@@ -254,6 +274,8 @@ class TrackGenerator {
         (current.dx + nextControlPoint.dx) / 2,
         (current.dy + nextControlPoint.dy) / 2,
       );
+
+
 
       // Update the last control point for the next segment
       lastControlPoint = nextControlPoint;

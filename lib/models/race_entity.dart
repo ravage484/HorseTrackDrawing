@@ -50,7 +50,7 @@ class RaceEntity {
     
     // write to console the distance to braking point
     // print('distanceToBrakingPoint: $distanceToBrakingPoint');
-    print('duration' + variableDuration.toString());
+    // print('duration' + variableDuration.toString());
 
     // If we are entering a turn, or getting closer to the braking point, then decelerate
     if (distanceFromPreviousBrakingPoint > 80 && distanceToBrakingPoint < 80) {

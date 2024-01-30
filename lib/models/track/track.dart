@@ -6,8 +6,17 @@ class Track {
   /// The path of the track
   Path trackPath = Path();
 
-  /// List of points that make up the track
-  List<Offset> trackPoints = [];
+  /// List of all points generated
+  List<Offset> allPoints = [];
+
+  /// List of the points that make the convex hull
+  List<Offset> trackPointsConvexHull = [];
+
+  /// List of points from the convex hull displacement algorithm
+  List<Offset> trackPointsDisplaced = [];
+  
+  /// List of points from the midpoint displacement algorithm
+  List<Offset> trackPointsPushedApart = [];
 
   /// The segments of the track
   List<TrackSegment> trackSegments = [];

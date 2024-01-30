@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For RawKeyboardListener
 import 'package:horse_track_drawing/models/track/track.dart';
-import 'package:horse_track_drawing/models/track/track_segment.dart';
 import 'package:horse_track_drawing/utils/utils_other.dart';
 import 'dart:math';
 import 'models/vehicle.dart';
@@ -52,10 +50,10 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
     TrackGenerator tg = TrackGenerator(
       area: trackSize,
-      numberOfPoints: 9,
+      numberOfPoints: 18,
       displacement: 500,
-      minDistance: 5,
-      minAngle: 5,
+      minDistance: 100,
+      minAngle: 45,
     );
     track = tg.generateTrack();
 
@@ -109,7 +107,7 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
   }
   void startRace() {
     // Assuming you have a timer or an equivalent mechanism to update your race logic
-    raceTimer = Timer.periodic(Duration(milliseconds: 100), (timer) { // Adjust the interval as needed
+    raceTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) { // Adjust the interval as needed
       for (var re in raceEntities) {
         // Update progress and adjust speed for turn without calling setState
         re.updateProgress();

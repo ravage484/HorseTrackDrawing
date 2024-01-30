@@ -5,7 +5,7 @@ import 'package:horse_track_drawing/resources/enums.dart';
 class Configurations {
 
   /// Track Type
-  static TrackType trackType = TrackType.square; 
+  static TrackType trackType = TrackType.midpointDisplacement; 
 
   /// Track Width
   static const double trackWidth = 1000.0;
@@ -14,7 +14,7 @@ class Configurations {
   static const double trackHeight = 1000.0;
 
   /// Number of Dots to be drawn
-  static const int numberOfRaceEntities = 1;
+  static const int numberOfRaceEntities = 25;
 
   /// Paint for the TrackType.horseTrack outline
   static Paint horseTrackOutlinePaint = Paint()
@@ -45,5 +45,5 @@ class Configurations {
   static const maxDurationMs = 60000;
 
   /// Minimum angle in degrees between three consecutive points
-  static num minAngle = 10.0;
+  static num minAngle = 45.0;
 }
