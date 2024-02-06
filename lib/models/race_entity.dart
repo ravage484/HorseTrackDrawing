@@ -32,28 +32,19 @@ class RaceEntity {
   /// Constructor
   RaceEntity({required this.vehicle, required this.driver, required this.track});
   
-  void adjustSpeedForTurn() {
+  void adjustSpeedForSegmentEnd() {
     if (track.trackSegments.isEmpty) {
       return;
     }
-    
-    // Assuming you have a method to get the current and next segment based on the RaceEntity's progress
+
+    // Get the current segment based on the RaceEntity's progress
     TrackSegment currentSegment = track.getCurrentSegment(progress);
-    TrackSegment prevSegment = track.getPreviousSegment(progress);
 
-    // If the RaceEntity's position is at or past the braking point, then decelerate
+    // If the RaceEntity's position is at or past the currentSegment's braking point then decelerate
     position = getOffsetAtProgress(track.trackPath, progress);
-
-    // Calculate the distance between the position and the braking point
-    double distanceToBrakingPoint = (position - currentSegment.end).distance;
-    double distanceFromPreviousBrakingPoint = (position - prevSegment.end).distance;
     
-    // write to console the distance to braking point
-    // print('distanceToBrakingPoint: $distanceToBrakingPoint');
-    // print('duration' + variableDuration.toString());
-
-    // If we are entering a turn, or getting closer to the braking point, then decelerate
-    if (distanceFromPreviousBrakingPoint > 80 && distanceToBrakingPoint < 80) {
+    // If the RaceEntity's position is at or past the currentSegment's braking point then decelerate
+    if (position.distance > currentSegment.end.distance) {
       // Calculate the new duration
       int newDurationMs = (adjustedDuration.inMilliseconds * currentSegment.decelerationFactor).toInt();
       newDurationMs = newDurationMs.clamp(Configurations.minDurationMs, Configurations.maxDurationMs); // Ensure within bounds
@@ -64,18 +55,62 @@ class RaceEntity {
       // Update the controller with the new duration
       controller.duration = variableDuration;
       controller.repeat();
-    } else if(distanceFromPreviousBrakingPoint > 30 && distanceToBrakingPoint > 30) {
-      // Calculate the new duration
-      int newDurationMs = (adjustedDuration.inMilliseconds * currentSegment.accelerationFactor).toInt();
-      newDurationMs = newDurationMs.clamp(Configurations.minDurationMs, Configurations.maxDurationMs); // Ensure within bounds
-
-      // Update the loop duration
-      variableDuration = Duration(milliseconds: newDurationMs);
-
-      // Update the controller with the new duration
-      controller.duration = variableDuration;
-      controller.repeat();
     }
+  }
+
+
+  void adjustSpeedForTurn() {
+    if (track.trackSegments.isEmpty) {
+      return;
+    }
+
+    // Get the current segment based on the RaceEntity's progress
+    TrackSegment currentSegment = track.getCurrentSegment(progress);
+
+    // If the RaceEntity's position is at or past the currentSegment's braking point then decelerate
+    position = getOffsetAtProgress(track.trackPath, progress);
+    
+
+    
+    // // Assuming you have a method to get the current and next segment based on the RaceEntity's progress
+    // TrackSegment currentSegment = track.getCurrentSegment(progress);
+    // TrackSegment prevSegment = track.getPreviousSegment(progress);
+
+    // // If the RaceEntity's position is at or past the braking point, then decelerate
+    // position = getOffsetAtProgress(track.trackPath, progress);
+
+    // // Calculate the distance between the position and the braking point
+    // double distanceToBrakingPoint = (position - currentSegment.end).distance;
+    // double distanceFromPreviousBrakingPoint = (position - prevSegment.end).distance;
+    
+    // // write to console the distance to braking point
+    // // print('distanceToBrakingPoint: $distanceToBrakingPoint');
+    // // print('duration' + variableDuration.toString());
+
+    // // If we are entering a turn, or getting closer to the braking point, then decelerate
+    // if (distanceFromPreviousBrakingPoint > 80 && distanceToBrakingPoint < 80) {
+    //   // Calculate the new duration
+    //   int newDurationMs = (adjustedDuration.inMilliseconds * currentSegment.decelerationFactor).toInt();
+    //   newDurationMs = newDurationMs.clamp(Configurations.minDurationMs, Configurations.maxDurationMs); // Ensure within bounds
+
+    //   // Update the loop duration
+    //   variableDuration = Duration(milliseconds: newDurationMs);
+
+    //   // Update the controller with the new duration
+    //   controller.duration = variableDuration;
+    //   controller.repeat();
+    // } else if(distanceFromPreviousBrakingPoint > 30 && distanceToBrakingPoint > 30) {
+    //   // Calculate the new duration
+    //   int newDurationMs = (adjustedDuration.inMilliseconds * currentSegment.accelerationFactor).toInt();
+    //   newDurationMs = newDurationMs.clamp(Configurations.minDurationMs, Configurations.maxDurationMs); // Ensure within bounds
+
+    //   // Update the loop duration
+    //   variableDuration = Duration(milliseconds: newDurationMs);
+
+    //   // Update the controller with the new duration
+    //   controller.duration = variableDuration;
+    //   controller.repeat();
+    // }
   }
 
 

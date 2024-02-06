@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:horse_track_drawing/models/track/track_segment.dart';
+import 'package:horse_track_drawing/models/track/track_offset.dart';
 
 /// A track is a collection of track segments
 class Track {
@@ -7,16 +8,19 @@ class Track {
   Path trackPath = Path();
 
   /// List of all points generated
-  List<Offset> allPoints = [];
+  List<TrackOffset> allPoints = [];
 
   /// List of the points that make the convex hull
-  List<Offset> trackPointsConvexHull = [];
+  List<TrackOffset> trackPointsConvexHull = [];
 
   /// List of points from the convex hull displacement algorithm
-  List<Offset> trackPointsDisplaced = [];
+  List<TrackOffset> trackPointsDisplaced = [];
   
   /// List of points from the midpoint displacement algorithm
-  List<Offset> trackPointsPushedApart = [];
+  List<TrackOffset> trackPointsPushedApart = [];
+
+  /// List of final track points
+  List<TrackOffset> finalTrackPoints = [];
 
   /// The segments of the track
   List<TrackSegment> trackSegments = [];

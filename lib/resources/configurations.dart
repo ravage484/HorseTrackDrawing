@@ -14,7 +14,10 @@ class Configurations {
   static const double trackHeight = 1000.0;
 
   /// Number of Dots to be drawn
-  static const int numberOfRaceEntities = 25;
+  static const int numberOfRaceEntities = 3;
+
+  /// Default weight for the conicTo method
+  static const double conicToDefaultWeight = 1; 
 
   /// Paint for the TrackType.horseTrack outline
   static Paint horseTrackOutlinePaint = Paint()

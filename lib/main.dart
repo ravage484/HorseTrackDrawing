@@ -50,10 +50,10 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
 
     TrackGenerator tg = TrackGenerator(
       area: trackSize,
-      numberOfPoints: 18,
-      displacement: 500,
-      minDistance: 100,
-      minAngle: 45,
+      numberOfPoints: 50,
+      displacement: 75,
+      minDistance: 10,
+      minAngle: 30,
     );
     track = tg.generateTrack();
 
@@ -111,7 +111,8 @@ class MyAppState extends State<MyApp> with TickerProviderStateMixin {
       for (var re in raceEntities) {
         // Update progress and adjust speed for turn without calling setState
         re.updateProgress();
-        re.adjustSpeedForTurn();
+        // re.adjustSpeedForTurn();
+        re.adjustSpeedForSegmentEnd();
       }
 
       // Now, call setState to reflect any changes in the UI

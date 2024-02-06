@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:horse_track_drawing/models/track/track.dart';
+import 'package:horse_track_drawing/models/track/track_offset.dart';
 import 'package:horse_track_drawing/models/track/track_segment.dart';
 import 'package:horse_track_drawing/resources/configurations.dart';
 import 'package:horse_track_drawing/resources/enums.dart';
@@ -51,7 +52,7 @@ class TrackGenerator {
       case TrackType.standardOval:
         return generateStandardOval();
       case TrackType.midpointDisplacement:
-        return generateMidpointDisplacement(debug: false);
+        return generateMidpointDisplacement(debug: true);
       case TrackType.square:
         return generateDebugSquare();
       default:
@@ -136,8 +137,29 @@ class TrackGenerator {
       Offset p3 = const Offset(500, 500); // Bottom right
       Offset p4 = const Offset(100, 500); // Bottom left
       Offset p5 = const Offset(0, 300); // Left
-
       points = [p0, p1, p2, p3, p4, p5];
+
+      // // Define the square's corner points
+      // Offset p0 = const Offset(100, 100); // Top left
+      // Offset p1 = const Offset(1000, 100); // Top right
+      // Offset p2 = const Offset(1000, 1000); // Bottom right
+      // Offset p3 = const Offset(100, 1000); // Bottom left
+      // points = [p0, p1, p2, p3];
+
+      // // Define an equalateral triangle's corner points
+      // Offset p0 = const Offset(100, 100); // Top left
+      // Offset p1 = const Offset(500, 100); // Top right
+      // Offset p2 = const Offset(300, 500); // Bottom
+      // points = [p0, p1, p2];
+
+      // // Define a rectangle (3x2) corner points
+      // Offset p0 = const Offset(100, 100); // Top left
+      // Offset p1 = const Offset(350, 100); // Top middle
+      // Offset p2 = const Offset(600, 100); // Top right
+      // Offset p3 = const Offset(100, 600); // Bottom left
+      // Offset p4 = const Offset(350, 600); // Bottom middle
+      // Offset p5 = const Offset(600, 600); // Bottom right
+      // points = [p0, p1, p2, p3, p4, p5];
     } else {
       // Generate random points
       points = generateRandomPoints(area, numberOfPoints);
@@ -150,27 +172,21 @@ class TrackGenerator {
     List<Offset> displacedMidpoints = displaceMidpoints(convexHull, displacement);
     
     // Step 4: Push apart points
-    List<Offset> pushedApartPoints = pushApartPoints(displacedMidpoints, minDistance, minAngle);
-    
+    // List<Offset> pushedApartPoints = pushApartPoints(displacedMidpoints, minDistance, minAngle);
+
+    // Step 5: Fillet the track
+    Track finalTrack = filletTrack(displacedMidpoints);
+
     // Step 5: Interpolate points with splines
-    Path finalTrackPath = interpolateWithSplines(pushedApartPoints);
-    finalTrackPath.close();
+    // Track finalTrack = interpolateWithSplines(pushedApartPoints);
     
-    // Step 6: Idenfity track segments from interpolated path
-    // List<TrackSegment> trackSegments = pathToTrackSegments(finalTrackPath);
-    List<TrackSegment> trackSegments = pointsToTrackSegments(pushedApartPoints);
-    
-    // Step 7: Create a track
-    Track track = Track();
-    track.allPoints = points;
-    track.trackPointsConvexHull = convexHull;
-    track.trackPointsDisplaced = displacedMidpoints;
-    track.trackPointsPushedApart = pushedApartPoints;
-    track.trackSegments = trackSegments;
-    track.trackPath = finalTrackPath;
+    // Include the other points and details in the final track
+    finalTrack.trackPointsConvexHull = TrackOffset.createList(convexHull);
+    finalTrack.trackPointsDisplaced = TrackOffset.createList(displacedMidpoints);
+    // finalTrack.trackPointsPushedApart = TrackOffset.createList(pushedApartPoints);
     
     // Return the final track path
-    return track;
+    return finalTrack;
   }
 
   /// Generate a list of random points
@@ -189,12 +205,21 @@ class TrackGenerator {
   /// Displace the midpoints of a convex hull
   List<Offset> displaceMidpoints(List<Offset> convexHull, double displacement) {
     List<Offset> newPoints = [];
+    bool alternating = false;
     for (int i = 0; i < convexHull.length; i++) {
       Offset p1 = convexHull[i];
       Offset p2 = convexHull[(i + 1) % convexHull.length]; // Wrap around
-      Offset midPoint = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
-      // Displace midpoint
-      midPoint = Offset(midPoint.dx, midPoint.dy + (Random().nextDouble() - 0.5) * displacement);
+
+      // If alternating reverse the displacement
+      if (alternating) {
+        displacement = -displacement;
+      }
+      alternating = !alternating;
+      Offset midPoint = findPerpendicularOffset(p1, p2, displacement);
+
+      // // Displace midpoint at a random angle
+      // midPoint = Offset(midPoint.dx, midPoint.dy + (Random().nextDouble() - 0.5) * displacement);
+
       newPoints.add(midPoint);
     }
     return newPoints;
@@ -239,53 +264,48 @@ class TrackGenerator {
     return points;
   }
 
-  /// Interpolate points with splines
-  Path interpolateWithSplines(List<Offset> points) {
-    Path path = Path();
-    if (points.isEmpty) return path;
+Track interpolateWithSplines(List<Offset> points) {
+  Track track = Track();
+  Path path = Path();
+  List<BezierSegment> bSegments = []; // List to store Bezier segments
 
-    // Start the path
-    path.moveTo(points.first.dx, points.first.dy);
+  if (points.isEmpty) return track;
+  path.moveTo(points.first.dx, points.first.dy);
 
-    if (points.length == 2) {
-      // If there are exactly two points, just draw a line.
-      path.lineTo(points.last.dx, points.last.dy);
-      return path;
-    }
-
-    // Calculate the first control points
-    Offset firstControlPoint = getControlPoint(points.last, points.first, points[1]);
-    Offset lastControlPoint = firstControlPoint;
-
-    for (int i = 0; i < points.length; i++) {
-      final Offset current = points[i];
-      final Offset next = points[(i + 1) % points.length];
-      final Offset afterNext = points[(i + 2) % points.length];
-
-      // Calculate control points for the current segment
-      Offset nextControlPoint = getControlPoint(current, next, afterNext);
-
-      // Draw the cubic Bezier curve segment
-      path.cubicTo(
-        lastControlPoint.dx,
-        lastControlPoint.dy,
-        current.dx,
-        current.dy,
-        (current.dx + nextControlPoint.dx) / 2,
-        (current.dy + nextControlPoint.dy) / 2,
-      );
-
-
-
-      // Update the last control point for the next segment
-      lastControlPoint = nextControlPoint;
-    }
-
-    // Close the path
-    path.close();
-
-    return path;
+  if (points.length == 2) {
+    path.lineTo(points.last.dx, points.last.dy);
+    return track;
   }
+
+  Offset firstControlPoint = getControlPoint(points.last, points.first, points[1]);
+  Offset lastControlPoint = firstControlPoint;
+
+  for (int i = 0; i < points.length; i++) {
+    final Offset current = points[i];
+    final Offset next = points[(i + 1) % points.length];
+    final Offset afterNext = points[(i + 2) % points.length];
+
+    Offset nextControlPoint = getControlPoint(current, next, afterNext);
+
+    // Draw the cubic Bezier curve segment
+    path.cubicTo(
+      lastControlPoint.dx,
+      lastControlPoint.dy,
+      current.dx,
+      current.dy,
+      (current.dx + nextControlPoint.dx) / 2,
+      (current.dy + nextControlPoint.dy) / 2,
+    );
+    lastControlPoint = nextControlPoint;
+  }
+
+  path.close();
+
+  track.trackPath = path;
+  track.trackSegments = generateTrackSegments(points);
+  
+  return track;
+}
 
   /// Calculate the control point for a cubic Bezier curve
   Offset getControlPoint(Offset before, Offset current, Offset after) {
@@ -299,17 +319,116 @@ class TrackGenerator {
     // Calculate and return the control point
     return current + tangent * length;
   }
+  
+  Track filletTrack(List<Offset> points) {
+    // Create a track
+    Track track = Track();
+
+    // Add the points to the track
+    track.allPoints = TrackOffset.createList(points);
+    
+    // Build segments from the points
+    List<TrackSegment> segments = pointsToTrackSegments(points);
+    track.trackSegments = segments;
+
+    // Create a path from each segment, and draw curves at every braking point to the next segment's acceleration point
+    // If on the last segment, draw a curve to the first segment's acceleration point
+    // Then close the path
+    Path path = Path();
+    path.moveTo(track.trackSegments.first.brakingPoint.dx, track.trackSegments.first.brakingPoint.dy);
+    for(int i = 0; i < track.trackSegments.length -1; i++) {
+      TrackSegment segment = track.trackSegments[i];
+      
+      // Get the next segment
+      TrackSegment nextSegment = track.trackSegments[(i + 1) % track.trackSegments.length];
+      
+      // Get the Offset at the segment.brakingDistance from the nextSegment.start to the nextSegment.end
+      Offset accelerationPoint = OffsetUtils.atDistanceBetween(nextSegment.start, nextSegment.end, segment.brakingDistance);
+
+      // Weight for the conicTo curve
+      double weight = Configurations.conicToDefaultWeight;
+
+      // // flip the weight if alternating
+      // if (i % 2 == 0) {
+      //   weight = weight * -1;
+      // }
+
+      // Draw a curve from the braking point to the next acceleration point
+      path.conicTo(
+        nextSegment.start.dx, nextSegment.start.dy,
+        accelerationPoint.dx, accelerationPoint.dy,
+        weight,
+      );
+
+      // Update the next segment's start to the acceleration point
+      nextSegment.start = TrackOffset.create(accelerationPoint, i + 1);
+    }
+    // path.closec();
+
+    track.trackPath = path;
+
+    return track;
+
+
+
+
+
+
+
+
+
+
+
+    // // Create a path from the points and at each related segment's braking point (if exists) draw a ConicTo curve
+    // Path path = Path();
+    // path.moveTo(track.allPoints.first.dx, track.allPoints.first.dy);
+    // for (int i = 0; i < track.allPoints.length; i++) {
+    //   // Get the related track segment
+    //   TrackSegment segment = track.trackSegments[i];
+
+    //   // Check if the segment has a braking point
+    //   if (segment.brakingPoint != Offset.zero) {
+    //     // Get the next segment
+    //     TrackSegment nextSegment = track.trackSegments[(i + 1) % track.trackSegments.length];
+
+    //     // Get the Offset at the segment.brakingDistance from the nextSegment.start to the nextSegment.end
+    //     Offset accelerationPoint = OffsetUtils.atDistanceBetween(nextSegment.start, nextSegment.end, segment.brakingDistance);
+
+    //     // Draw the line from the start to the braking point unless the path is already at this point
+    //     path.lineTo(segment.brakingPoint.dx, segment.brakingPoint.dy);//, Configurations.conicToDefaultWeight);
+
+    //     // Draw a curve from the braking point to the next acceleration point
+    //     path.conicTo(
+    //       nextSegment.start.dx, nextSegment.start.dy,
+    //       accelerationPoint.dx, accelerationPoint.dy,
+    //       1,
+    //     );
+        
+    //     // Update the next segment's start to the acceleration point
+    //     nextSegment.start = TrackOffset.create(accelerationPoint, i + 1);
+
+    //     // Skip to the next segment
+    //     i++;
+    //   } else {
+    //     // Draw a line to the next point
+    //     path.lineTo(track.allPoints[i].dx, track.allPoints[i].dy);
+    //   }
+    // }
+    // path.close();
+  }
 }
 
-/// Convert a list of points to a list of track segments
-List<TrackSegment> pointsToTrackSegments(List<Offset> points) {
+List<TrackSegment> generateTrackSegments(List<Offset> points) {
   List<TrackSegment> segments = [];
   for (int i = 0; i < points.length; i++) {
     Offset start = points[i];
     Offset end = points[(i + 1) % points.length];
     Offset next = points[(i + 2) % points.length];
+    // BezierSegment bSegment = bSegments[i];
     
-    TrackSegment trackSegment = TrackSegment(id: i, start: start, end: end);
+    TrackSegment trackSegment = TrackSegment(id: i, 
+    start: TrackOffset.create(start, i), 
+    end: TrackOffset.create(end, i + 1));
 
     // Calculate the angle between the current segment and the next
     double angle = calculateAngleBetweenLines(start, end, next);
@@ -329,7 +448,7 @@ List<TrackSegment> pointsToTrackSegments(List<Offset> points) {
 
     // Calculate the braking point for the current segment by 
     Offset brakingPoint = calculateBrakingPoint(trackSegment.start, trackSegment.end, angle, decelerationFactor);
-    trackSegment.brakingPoint = end;
+    trackSegment.brakingPoint = TrackOffset.create(brakingPoint, i);
 
     // Add the segment to the list
     segments.add(trackSegment);
@@ -337,35 +456,96 @@ List<TrackSegment> pointsToTrackSegments(List<Offset> points) {
   return segments;
 }
 
-/// Convert a path to a list of track segments
-List<TrackSegment> pathToTrackSegments(Path path) {
-  final List<TrackSegment> segments = [];
-  final pathMetrics = path.computeMetrics().toList();
+/// Convert a list of points to a list of track segments
+List<TrackSegment> pointsToTrackSegments(List<Offset> points) {
+  List<TrackSegment> segments = [];
   
-  final pathSegments = pathMetrics.first.extractPath(0, pathMetrics.first.length,); // Get the metrics of the path
-  int id = 0;
-  
-  for (final metric in pathMetrics) {
-    final pathLength = metric.length;
+  for (int i = 0; i < points.length; i++) {
+    // Get the current segment start/end points and the next point for angle calculation
+    Offset start = points[i];
+    Offset end = points[(i + 1) % points.length];
+    Offset next = points[(i + 2) % points.length];
+    
+    // Create a track segment
+    TrackSegment trackSegment = TrackSegment(id: i, 
+      start: TrackOffset.create(start, i), 
+      end: TrackOffset.create(end, i + 1));
 
-    // Use a small delta to get the start and end points of the segment
-    // We use delta because getTangentForOffset doesn't work well exactly at 0 or the maximum length
-    const double delta = 0.01;
-
-    // Get the start point tangent
-    final startTangent = metric.getTangentForOffset(delta);
-    // Get the end point tangent
-    final endTangent = metric.getTangentForOffset(pathLength - delta);
-
-    if (startTangent != null && endTangent != null) {
-      final startOffset = startTangent.position;
-      final endOffset = endTangent.position;
-      // final distance = (endOffset - startOffset).distance; // Calculate the distance between start and end
-
-      segments.add(TrackSegment(id: id, start: startOffset, end: endOffset));
-      id++;
+    // Calculate the angle between the current segment and the next
+    double angle = calculateAngleBetweenLines(start, end, next);
+    if (angle.isNaN || angle < Configurations.minAngle) {
+      // No need to adjust the speed
+      // Set the default Braking Point to 1% of the segment length
+      Offset brakingPoint = OffsetUtils.atDistanceBetween(start, end, (end - start).distance * 0.1);
+      trackSegment.brakingPoint = TrackOffset.create(brakingPoint, i);
+      segments.add(trackSegment);
+      continue;
     }
+    
+    // Map the angle to a deceleration factor. 
+    // Smaller angles (sharper turns) should result in greater deceleration.
+    // If the abs value of the angle is >= 180, then don't decelerate
+    double decelerationFactor = 1.0;
+    if (angle.abs() < 160) { 
+      decelerationFactor = mapAngleToDeceleration(angle);
+      trackSegment.decelerationFactor = decelerationFactor;
+    }
+
+    // Calculate the braking point for the current segment by 
+    Offset brakingPoint = calculateBrakingPoint(trackSegment.start, trackSegment.end, angle, decelerationFactor);
+    trackSegment.brakingPoint = TrackOffset.create(brakingPoint, i);
+
+    // Add the segment to the list
+    segments.add(trackSegment);
   }
 
+  // Loop over each segment again and set the acceleration point for the next segment
+  // If on the last segment, look towards the first segment.
+  for (int i = 0; i < segments.length; i++) {
+    TrackSegment currentSegment = segments[i];
+    TrackSegment nextSegment = segments[(i + 1) % segments.length];
+    Offset accelerationPoint = nextSegment.start;
+    if (i < segments.length - 1) {
+      // Set the nextSegments acceleration point based on the percentage distance of the current braking point
+
+
+      // REVIEW THIS DISTANCE AND PERCENTAGE VALUES
+      accelerationPoint = OffsetUtils.atDistanceBetween(nextSegment.start, nextSegment.end, nextSegment.distance * currentSegment.brakingDistancePercentage);
+    }
+    nextSegment.accelerationPoint = TrackOffset.create(accelerationPoint, i);
+  }
   return segments;
 }
+
+// /// Convert a path to a list of track segments
+// List<TrackSegment> pathToTrackSegments(Path path) {
+//   final List<TrackSegment> segments = [];
+//   final pathMetrics = path.computeMetrics().toList();
+  
+//   final pathSegments = pathMetrics.first.extractPath(0, pathMetrics.first.length,); // Get the metrics of the path
+//   int id = 0;
+  
+//   for (final metric in pathMetrics) {
+//     final pathLength = metric.length;
+
+//     // Use a small delta to get the start and end points of the segment
+//     // We use delta because getTangentForOffset doesn't work well exactly at 0 or the maximum length
+//     const double delta = 0.01;
+
+//     // Get the start point tangent
+//     final startTangent = metric.getTangentForOffset(delta);
+//     // Get the end point tangent
+//     final endTangent = metric.getTangentForOffset(pathLength - delta);
+
+//     if (startTangent != null && endTangent != null) {
+//       final startOffset = startTangent.position;
+//       final endOffset = endTangent.position;
+//       // final distance = (endOffset - startOffset).distance; // Calculate the distance between start and end
+
+//       segments.add(TrackSegment(id: id, start: startOffset, end: endOffset));
+//       id++;
+//     }
+//   }
+
+//   return segments;
+// }

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:horse_track_drawing/models/track/track_segment.dart';
 import 'package:horse_track_drawing/utils/utils_other.dart';
 
 Offset _findLowestPoint(List<Offset> points) {
@@ -73,24 +74,7 @@ double calculateAngleBetweenLines(Offset xStart, Offset xEnd, Offset yEnd) {
   return angleDegrees;
 }
 
-// Offset calculateBrakingPoint(Offset startPoint, double segmentLength, double turnAngle, double brakingFactor) {
-//   // Normalize the turn angle to [0, 180], where 180 is a straight line
-//   // and smaller angles represent sharper turns.
-//   double normalizedAngle = turnAngle.clamp(0, 180);
-
-//   // Calculate the braking distance as a function of the segment length, turn angle, and braking factor.
-//   // This is a heuristic and might need adjustment based on your specific needs.
-//   double brakingDistance = segmentLength * (1 - (normalizedAngle / 180)) * brakingFactor;
-
-//   // Ensure braking distance is within the segment
-//   brakingDistance = brakingDistance.clamp(0, segmentLength);
-
-//   // Calculate the braking point based on the braking distance.
-//   // Assuming the segment is along the X-axis for simplicity. Adjust based on actual segment orientation.
-//   Offset brakingPoint = Offset(startPoint.dx + (segmentLength - brakingDistance), startPoint.dy);
-
-//   return brakingPoint;
-// }
+/// Calculate the braking point for a given segment, turn angle, and braking factor
 Offset calculateBrakingPoint(Offset startPoint, Offset endPoint, double turnAngle, double brakingFactor) {
   // Normalize the turn angle to [0, 180], where 180 is a straight line
   // and smaller angles represent sharper turns.
@@ -116,7 +100,6 @@ Offset calculateBrakingPoint(Offset startPoint, Offset endPoint, double turnAngl
   return brakingPoint;
 }
 
-
 Offset getOffsetAtProgress(Path path, double progress) {
   // Ensure progress is clamped between 0.0 and 1.0
   progress = progress.clamp(0.0, 1.0);
@@ -141,4 +124,90 @@ double mapAngleToDeceleration(double angle) {
   // Example mapping function: sharper angles result in greater deceleration
   const double maxAngle = 180.0; // Straight line
   return 1 + (maxAngle - angle) / maxAngle; // Adjust this formula as needed
+}
+
+/// Find the points of maximum curvature in a list of Bezier segments
+List<Offset> findPointsOfMaximumCurvature(List<BezierSegment> segments) {
+  List<Offset> maxCurvaturePoints = [];
+
+  for (BezierSegment segment in segments) {
+    double maxCurvature = 0.0;
+    Offset pointOfMaxCurvature = Offset.zero;
+    const int samples = 10000; // Number of samples per segment
+
+    for (int i = 0; i <= samples; i++) {
+      double t = i / samples;
+      Offset derivative1 = segment.firstDerivative(t);
+      Offset derivative2 = segment.secondDerivative(t);
+
+      // Calculate curvature using the formula given above
+      double curvatureNumerator = (derivative1.dx * derivative2.dy) - (derivative1.dy * derivative2.dx);
+      num curvatureDenominator = pow(derivative1.dx * derivative1.dx + derivative1.dy * derivative1.dy, 1.5);
+      double curvature = curvatureNumerator / curvatureDenominator;
+
+      // Check for maximum curvature
+      if (curvature.abs() > maxCurvature) {
+        maxCurvature = curvature.abs();
+        pointOfMaxCurvature = segment.pointAt(t);
+      }
+    }
+
+    if (maxCurvature > 0) {
+      maxCurvaturePoints.add(pointOfMaxCurvature);
+    }
+  }
+
+  return maxCurvaturePoints;
+}
+
+Offset findPerpendicularOffset(Offset start, Offset end, double distance) {
+  // Find the midPoint of the line segment
+  Offset midPoint = calculateMidpoint(start, end);
+  
+  // Calculate the slope of the line
+  double slope = calculateSlope(start, end);
+
+  // Calculate the perpendicular slope
+  Offset perpOffset = Offset.zero;
+  try {
+    // Assuming we want the point above the segment
+    bool above = true;
+    perpOffset = calculatePerpendicularOffset(midPoint, slope, distance, above);
+    print("Perpendicular point at distance: $perpOffset");
+  } catch (e) {
+    print(e);
+  }
+
+  return perpOffset;
+}
+
+Offset calculateMidpoint(Offset start, Offset end) {
+  return Offset(
+    (start.dx + end.dx) / 2.0,
+    (start.dy + end.dy) / 2.0,
+  );
+}
+
+double calculateSlope(Offset start, Offset end) {
+  // Check for vertical line to avoid division by zero
+  if (end.dx == start.dx) {
+    // throw Exception('Vertical line segment; slope is undefined.');
+  }
+  return (end.dy - start.dy) / (end.dx - start.dx);
+}
+
+Offset calculatePerpendicularOffset(Offset point, double slope, double distance, bool above) {
+  // Calculate the angle of the line with the slope
+  double theta = atan(slope);
+
+  // If the point is to be above the line, add PI/2 to the angle to rotate it 90 degrees;
+  // if below, subtract PI/2.
+  double adjustedTheta = above ? theta + pi / 2 : theta - pi / 2;
+
+  // Calculate the x and y using cosine and sine functions
+  double dx = distance * cos(adjustedTheta);
+  double dy = distance * sin(adjustedTheta);
+
+  // Return the new offset
+  return Offset(point.dx + dx, point.dy + dy);
 }

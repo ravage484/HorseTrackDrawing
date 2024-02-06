@@ -54,22 +54,41 @@ class GamePainter extends CustomPainter {
       // for (var point in track.allPoints) {
       //   canvas.drawCircle(point, 25.0, Paint()..color = Colors.blue);
       // }
+      
+      // Paint each convex hull point with a green outline
+      for (var point in track.trackPointsConvexHull) {
+        canvas.drawCircle(point, 20.0, Paint()..color = Colors.green);
+        final nextPoint = track.trackPointsConvexHull[(track.trackPointsConvexHull.indexOf(point) + 1) % track.trackPointsConvexHull.length];
+        canvas.drawLine(point, nextPoint, Paint()..color = Colors.green
+          ..strokeWidth = 15.0);
+      }
 
-      // // Paint each convex hull point with a green outline
-      // for (var point in track.trackPointsConvexHull) {
-      //   canvas.drawCircle(point, 20.0, Paint()..color = Colors.green);
-      //   final nextPoint = track.trackPointsConvexHull[(track.trackPointsConvexHull.indexOf(point) + 1) % track.trackPointsConvexHull.length];
-      //   canvas.drawLine(point, nextPoint, Paint()..color = Colors.green
-      //     ..strokeWidth = 15.0);
-      // }
+      // for loop over the amount of points
+      for (int i = 0; i < track.trackPointsDisplaced.length; i++) {
+        // get the current point from the convex hull
+        final point = track.trackPointsConvexHull[i];
 
-      // // Paint each displaced point with a yellow outline
-      // for (var point in track.trackPointsDisplaced) {
-      //   canvas.drawCircle(point, 15.0, Paint()..color = Colors.orange);
-      //   final nextPoint = track.trackPointsDisplaced[(track.trackPointsDisplaced.indexOf(point) + 1) % track.trackPointsDisplaced.length];
-      //   canvas.drawLine(point, nextPoint, Paint()..color = Colors.orange
-      //     ..strokeWidth = 10.0);
-      // }
+        // get the next point from the convex hull
+        final nextPoint = track.trackPointsConvexHull[(i + 1) % track.trackPointsConvexHull.length];
+
+        // get the midpoint between the two convex hull points
+        final midpoint = Offset((point.dx + nextPoint.dx) / 2, (point.dy + nextPoint.dy) / 2);
+
+        // get the current point from the displaced points
+        final displacedPoint = track.trackPointsDisplaced[i];
+
+        // draw a line from the displaced point to the midpoint of the convex hull points
+        canvas.drawLine(displacedPoint, midpoint, Paint()..color = Colors.teal
+          ..strokeWidth = 10.0);
+      }
+
+      // Paint each displaced point with a yellow outline
+      for (var point in track.trackPointsDisplaced) {
+        canvas.drawCircle(point, 15.0, Paint()..color = Colors.orange);
+        final nextPoint = track.trackPointsDisplaced[(track.trackPointsDisplaced.indexOf(point) + 1) % track.trackPointsDisplaced.length];
+        canvas.drawLine(point, nextPoint, Paint()..color = Colors.orange
+          ..strokeWidth = 10.0);
+      }
 
       // // Paint each pushed apart point with a purple outline
       // for (var point in track.trackPointsPushedApart) {
@@ -77,31 +96,26 @@ class GamePainter extends CustomPainter {
       //   final nextPoint = track.trackPointsPushedApart[(track.trackPointsPushedApart.indexOf(point) + 1) % track.trackPointsPushedApart.length];
       //   canvas.drawLine(point, nextPoint, Paint()..color = Colors.purple
       //     ..strokeWidth = 5.0);
+
+      //   // Also paint the index of this point
+      //   final textPainter = TextPainter(
+      //     text: TextSpan(
+      //       text: track.trackPointsPushedApart.indexOf(point).toString(),
+      //       style: TextStyle(color: Colors.black, fontSize: 20.0),
+      //     ),
+      //     textDirection: TextDirection.ltr,
+      //   )..layout();
       // }
 
-      // // for loop over the amount of points
-      // for (int i = 0; i < track.trackPointsPushedApart.length; i++) {
-      //   // get the current point from the convex hull
-      //   final point = track.trackPointsConvexHull[i];
-
-      //   // get the next point from the convex hull
-      //   final nextPoint = track.trackPointsConvexHull[(i + 1) % track.trackPointsConvexHull.length];
-
-      //   // get the midpoint between the two convex hull points
-      //   final midpoint = Offset((point.dx + nextPoint.dx) / 2, (point.dy + nextPoint.dy) / 2);
-
-      //   // get the current point from the displaced points
-      //   final displacedPoint = track.trackPointsDisplaced[i];
-
-      //   // draw a line from the displaced point to the midpoint of the convex hull points
-      //   canvas.drawLine(displacedPoint, midpoint, Paint()..color = Colors.teal
-      //     ..strokeWidth = 10.0);
-      // }
     }
 
     // Paint each braking point with a red outline
     for (var bp in track.trackSegments.map((e) => e.brakingPoint)) {
-      canvas.drawCircle(bp, 3.0, Paint()..color = Colors.red);
+      canvas.drawCircle(bp, 15.0, Paint()..color = Colors.red);
+    }
+    // Paint each acceleration point with a green outline
+    for (var bp in track.trackSegments.map((e) => e.brakingPoint)) {
+      canvas.drawCircle(bp, 10.0, Paint()..color = Colors.blue);
     }
     
     // Paint each animated dot with white outlines
