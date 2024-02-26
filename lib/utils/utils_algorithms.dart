@@ -20,6 +20,7 @@ int _orientation(Offset p, Offset q, Offset r) {
   return (val > 0) ? 1 : 2; // clock or counterclock wise
 }
 
+/// Compute the convex hull of a set of points
 List<Offset> computeConvexHull(List<Offset> points) {
   // Find the lowest point
   Offset start = _findLowestPoint(points);

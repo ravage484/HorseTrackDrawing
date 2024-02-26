@@ -33,8 +33,6 @@ class TrackGenerator {
   double minDistance;
   double minAngle;
 
-  List<TrackSegment> trackSegments = [];
-
   TrackGenerator({
     required this.area,
     required this.numberOfPoints,
@@ -369,52 +367,6 @@ Track interpolateWithSplines(List<Offset> points) {
 
     return track;
 
-
-
-
-
-
-
-
-
-
-
-    // // Create a path from the points and at each related segment's braking point (if exists) draw a ConicTo curve
-    // Path path = Path();
-    // path.moveTo(track.allPoints.first.dx, track.allPoints.first.dy);
-    // for (int i = 0; i < track.allPoints.length; i++) {
-    //   // Get the related track segment
-    //   TrackSegment segment = track.trackSegments[i];
-
-    //   // Check if the segment has a braking point
-    //   if (segment.brakingPoint != Offset.zero) {
-    //     // Get the next segment
-    //     TrackSegment nextSegment = track.trackSegments[(i + 1) % track.trackSegments.length];
-
-    //     // Get the Offset at the segment.brakingDistance from the nextSegment.start to the nextSegment.end
-    //     Offset accelerationPoint = OffsetUtils.atDistanceBetween(nextSegment.start, nextSegment.end, segment.brakingDistance);
-
-    //     // Draw the line from the start to the braking point unless the path is already at this point
-    //     path.lineTo(segment.brakingPoint.dx, segment.brakingPoint.dy);//, Configurations.conicToDefaultWeight);
-
-    //     // Draw a curve from the braking point to the next acceleration point
-    //     path.conicTo(
-    //       nextSegment.start.dx, nextSegment.start.dy,
-    //       accelerationPoint.dx, accelerationPoint.dy,
-    //       1,
-    //     );
-        
-    //     // Update the next segment's start to the acceleration point
-    //     nextSegment.start = TrackOffset.create(accelerationPoint, i + 1);
-
-    //     // Skip to the next segment
-    //     i++;
-    //   } else {
-    //     // Draw a line to the next point
-    //     path.lineTo(track.allPoints[i].dx, track.allPoints[i].dy);
-    //   }
-    // }
-    // path.close();
   }
 }
 
